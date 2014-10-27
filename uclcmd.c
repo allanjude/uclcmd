@@ -253,77 +253,95 @@ process_get_command(const ucl_object_t obj, const char *command_str,
     }
     if (strcmp(command_str, "length") == 0) {
 	/* Return the number of items in an array */
-	if (show_keys == 1)
-	    printf("%s=", obj.key);
-	printf("%u\n", obj.len);
+	if (obj == NULL) {
+	    if (show_keys == 1)
+		printf("(null)=");
+	    printf("0\n");
+	} else {
+	    if (show_keys == 1)
+		printf("%s=", obj.key);
+	    printf("%u\n", obj.len);
+	}
     } else if (strcmp(command_str, "type") == 0) {
 	/* Return the type of the current object */
-	if (show_keys == 1)
-	    printf("%s=", obj.key);
-	switch(obj.type) {
-	case UCL_OBJECT:
-	    printf("object\n");
-	    break;
-	case UCL_ARRAY:
-	    printf("array\n");
-	    break;
-	case UCL_INT:
-	    printf("int\n");
-	    break;
-	case UCL_FLOAT:
-	    printf("float\n");
-	    break;
-	case UCL_STRING:
-	    printf("string\n");
-	    break;
-	case UCL_BOOLEAN:
-	    printf("boolean\n");
-	    break;
-	case UCL_TIME:
-	    printf("time\n");
-	    break;
-	case UCL_USERDATA:
-	    printf("userdata\n");
-	    break;
-	case UCL_NULL:
+	if (obj == NULL) {
+	    if (show_keys == 1)
+		printf("(null)=");
 	    printf("null\n");
-	    break;
-	default:
-	    printf("unknown\n");
-	    break;
+	} else {
+	    if (show_keys == 1)
+		printf("%s=", obj.key);
+	    switch(obj.type) {
+	    case UCL_OBJECT:
+		printf("object\n");
+		break;
+	    case UCL_ARRAY:
+		printf("array\n");
+		break;
+	    case UCL_INT:
+		printf("int\n");
+		break;
+	    case UCL_FLOAT:
+		printf("float\n");
+		break;
+	    case UCL_STRING:
+		printf("string\n");
+		break;
+	    case UCL_BOOLEAN:
+		printf("boolean\n");
+		break;
+	    case UCL_TIME:
+		printf("time\n");
+		break;
+	    case UCL_USERDATA:
+		printf("userdata\n");
+		break;
+	    case UCL_NULL:
+		printf("null\n");
+		break;
+	    default:
+		printf("unknown\n");
+		break;
+	    }
 	}
     } else if (strcmp(command_str, "keys") == 0) {
-	/* Return the keys of the current object */
-	while ((cur = ucl_iterate_object(&obj, &it, true))) {
-	    printf("%s\n", ucl_object_key(cur));
-	    loopcount++;
-	}
-	if (loopcount == 0) {
-	    
-	}
-    } else if (strcmp(command_str, "values") == 0) {
-	/* Return the values of the current object */
-	while ((cur = ucl_iterate_object(&obj, &it, true))) {
-	    output_key(cur, ucl_object_key(cur));
-	    loopcount++;
-	}
-	if (loopcount == 0) {
-	    
-	}
-    } else if (strcmp(command_str, "each") == 0) {
-	/* Return the values of the current object */
-	char *rcmds = malloc(strlen(remaining_commands) + 1);
-	strcpy(rcmds, remaining_commands);
-	char *next_command = strsep(&rcmds, "|");
-	if (next_command != NULL) {
+	if (obj != NULL) {
+	    /* Return the keys of the current object */
 	    while ((cur = ucl_iterate_object(&obj, &it, true))) {
-		recurse_level = process_get_command(*cur, next_command, rcmds,
-		    recurse + 1);
+		printf("%s\n", ucl_object_key(cur));
 		loopcount++;
 	    }
 	}
-	if (loopcount == 0) {
-	    
+	if (loopcount == 0 && debug > 0) {
+	    fprintf(stderr, "DEBUG: Found 0 keys\n");
+	}
+    } else if (strcmp(command_str, "values") == 0) {
+	if (obj != NULL) {
+	    /* Return the values of the current object */
+	    while ((cur = ucl_iterate_object(&obj, &it, true))) {
+		output_key(cur, ucl_object_key(cur));
+		loopcount++;
+	    }
+	}
+	if (loopcount == 0 && debug > 0) {
+	    fprintf(stderr, "DEBUG: Found 0 values\n");
+	}
+    } else if (strcmp(command_str, "each") == 0) {
+	if (obj != NULL) {
+	    /* Return the values of the current object */
+	    char *rcmds = malloc(strlen(remaining_commands) + 1);
+	    strcpy(rcmds, remaining_commands);
+	    char *next_command = strsep(&rcmds, "|");
+	    if (next_command != NULL) {
+		while ((cur = ucl_iterate_object(&obj, &it, true))) {
+		    recurse_level = process_get_command(*cur, next_command, rcmds,
+			recurse + 1);
+		    loopcount++;
+		}
+	    }
+	}
+	if (loopcount == 0 && debug > 0) {
+	    fprintf(stderr, "DEBUG: Found 0 objects to each over\n");
 	}
     } else {
 	/* Not a valid command */
