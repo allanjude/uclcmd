@@ -37,7 +37,7 @@ static ucl_object_t *root_obj = NULL;
 
 void usage();
 void get_mode(char *requested_node);
-int process_get_command(const ucl_object_t obj, const char *command_str,
+int process_get_command(const ucl_object_t *obj, const char *command_str,
     char *remaining_commands, int recurse);
 void set_mode(char *requested_node, char *data);
 void output_key(const ucl_object_t *obj, const char *key);
@@ -136,7 +136,7 @@ main(int argc, char *argv[])
 	} else {
 	    fprintf(stderr, "Error: No search performed.\n");
 	}
-    } elseif (mode == 1) { /* Set Mode */
+    } else if (mode == 1) { /* Set Mode */
 	fprintf(stderr, "Error: Set mode not implemented yet.\n");
 	ret = 99;
 	goto end;
@@ -211,7 +211,7 @@ get_mode(char *requested_node)
 	    fprintf(stderr, "DEBUG: Performing \"%s\" command on \"%s\"...\n",
 		command_str, node_name);
 	}
-	int done = process_get_command(*found_object, command_str, cmd, 1);
+	int done = process_get_command(found_object, command_str, cmd, 1);
 	if (debug >= 2) {
 	    fprintf(stderr, "DEBUG: Finished process, did: %i commands\n",
 		done);
@@ -239,7 +239,7 @@ get_mode(char *requested_node)
 }
 
 int
-process_get_command(const ucl_object_t obj, const char *command_str,
+process_get_command(const ucl_object_t *obj, const char *command_str,
     char *remaining_commands, int recurse)
 {
     ucl_object_iter_t it = NULL;
@@ -259,8 +259,8 @@ process_get_command(const ucl_object_t obj, const char *command_str,
 	    printf("0\n");
 	} else {
 	    if (show_keys == 1)
-		printf("%s=", obj.key);
-	    printf("%u\n", obj.len);
+		printf("%s=", obj->key);
+	    printf("%u\n", obj->len);
 	}
     } else if (strcmp(command_str, "type") == 0) {
 	/* Return the type of the current object */
@@ -270,8 +270,8 @@ process_get_command(const ucl_object_t obj, const char *command_str,
 	    printf("null\n");
 	} else {
 	    if (show_keys == 1)
-		printf("%s=", obj.key);
-	    switch(obj.type) {
+		printf("%s=", obj->key);
+	    switch(obj->type) {
 	    case UCL_OBJECT:
 		printf("object\n");
 		break;
@@ -307,7 +307,7 @@ process_get_command(const ucl_object_t obj, const char *command_str,
     } else if (strcmp(command_str, "keys") == 0) {
 	if (obj != NULL) {
 	    /* Return the keys of the current object */
-	    while ((cur = ucl_iterate_object(&obj, &it, true))) {
+	    while ((cur = ucl_iterate_object(obj, &it, true))) {
 		printf("%s\n", ucl_object_key(cur));
 		loopcount++;
 	    }
@@ -318,7 +318,7 @@ process_get_command(const ucl_object_t obj, const char *command_str,
     } else if (strcmp(command_str, "values") == 0) {
 	if (obj != NULL) {
 	    /* Return the values of the current object */
-	    while ((cur = ucl_iterate_object(&obj, &it, true))) {
+	    while ((cur = ucl_iterate_object(obj, &it, true))) {
 		output_key(cur, ucl_object_key(cur));
 		loopcount++;
 	    }
@@ -333,8 +333,8 @@ process_get_command(const ucl_object_t obj, const char *command_str,
 	    strcpy(rcmds, remaining_commands);
 	    char *next_command = strsep(&rcmds, "|");
 	    if (next_command != NULL) {
-		while ((cur = ucl_iterate_object(&obj, &it, true))) {
-		    recurse_level = process_get_command(*cur, next_command, rcmds,
+		while ((cur = ucl_iterate_object(obj, &it, true))) {
+		    recurse_level = process_get_command(cur, next_command, rcmds,
 			recurse + 1);
 		    loopcount++;
 		}
