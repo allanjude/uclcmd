@@ -349,6 +349,15 @@ process_get_command(const ucl_object_t *obj, const char *command_str,
 	if (loopcount == 0 && debug > 0) {
 	    fprintf(stderr, "DEBUG: Found 0 objects to each over\n");
 	}
+    } else if (strncmp(command_str, ".", 1) == 0) {
+	/* User has provided an identifier after the commands */
+	/* Search for selected node */
+	if (debug > 0) {
+	    fprintf(stderr, "DEBUG: Searching for subnode %s\n", command_str);
+	}
+	obj = ucl_lookup_path(obj, command_str);
+	recurse_level = recurse + 1;
+	loopcount++;
     } else {
 	/* Not a valid command */
 	fprintf(stderr, "Error: invalid command %s\n\n", command_str);
