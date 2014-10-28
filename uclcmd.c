@@ -57,7 +57,7 @@ main(int argc, char *argv[])
     
     /*	options	descriptor */
     static struct option longopts[] = {
-	{ "debug",      no_argument,            &debug,     1 },
+	{ "debug",      optional_argument,      NULL,       'd' },
 	{ "file",       required_argument,      NULL,       'f' },
 	{ "get",        no_argument,            &mode,      0 },
 	{ "keys",       no_argument,            &show_keys, 1 },
@@ -66,10 +66,14 @@ main(int argc, char *argv[])
 	{ NULL,         0,                      NULL,       0 }
     };
     
-    while ((ch = getopt_long(argc, argv, "f:gks", longopts, NULL)) != -1) {
+    while ((ch = getopt_long(argc, argv, "df:gkrs", longopts, NULL)) != -1) {
 	switch (ch) {
 	case 'd':
-	    debug = 1;
+	    if (optarg != NULL) {
+		debug = strtol(optarg, NULL, 0);
+	    } else {
+		debug = 1;
+	    }
 	    break;
 	case 'f':
 	    filename = optarg;
@@ -87,6 +91,7 @@ main(int argc, char *argv[])
 	    mode = 1;
 	    break;
 	case 0:
+	    
 	    break;
 	default:
 	    fprintf(stderr, "Error: Unexpected option: %i\n", ch);
@@ -355,9 +360,12 @@ process_get_command(const ucl_object_t *obj, const char *command_str,
 	if (debug > 0) {
 	    fprintf(stderr, "DEBUG: Searching for subnode %s\n", command_str);
 	}
-	obj = ucl_lookup_path(obj, command_str);
-	recurse_level = recurse + 1;
-	loopcount++;
+	cur = ucl_lookup_path(obj, command_str);
+	/* If this is the last thing on the stack, output */
+	if (remaining_commands == NULL) {
+	    obj = cur;
+	    output_key(cur, command_str);
+	}
     } else {
 	/* Not a valid command */
 	fprintf(stderr, "Error: invalid command %s\n\n", command_str);
