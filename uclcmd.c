@@ -344,8 +344,8 @@ process_get_command(const ucl_object_t *obj, const char *command_str,
 	    char *next_command = strsep(&rcmds, "|");
 	    if (next_command != NULL) {
 		while ((cur = ucl_iterate_object(obj, &it, true))) {
-		    recurse_level = process_get_command(cur, next_command, rcmds,
-			recurse + 1);
+		    recurse_level = process_get_command(cur, next_command,
+			rcmds, recurse + 1);
 		    loopcount++;
 		}
 	    }
@@ -362,8 +362,16 @@ process_get_command(const ucl_object_t *obj, const char *command_str,
 	cur = ucl_lookup_path(obj, command_str);
 	/* If this is the last thing on the stack, output */
 	if (remaining_commands == NULL) {
-	    obj = cur;
 	    output_key(cur, command_str);
+	} else {
+	    /* Return the values of the current object */
+	    char *rcmds = malloc(strlen(remaining_commands) + 1);
+	    strcpy(rcmds, remaining_commands);
+	    char *next_command = strsep(&rcmds, "|");
+	    if (next_command != NULL) {
+		recurse_level = process_get_command(cur, next_command,
+		    rcmds, recurse + 1);
+	    }
 	}
     } else {
 	/* Not a valid command */
@@ -371,7 +379,7 @@ process_get_command(const ucl_object_t *obj, const char *command_str,
 	exit(1);
     }
     command_count++;
-    if (debug >= 2) {
+    if (debug >= 3) {
 	fprintf(stderr, "DEBUG: Returning p_g_c with c_count=%i rlevel=%i\n",
 	    command_count, recurse_level);
     }
