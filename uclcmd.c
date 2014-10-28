@@ -327,6 +327,12 @@ process_get_command(const ucl_object_t *obj, const char *command_str,
 	    fprintf(stderr, "DEBUG: Found 0 values\n");
 	}
     } else if (strcmp(command_str, "each") == 0) {
+	if (remaining_commands == NULL) {
+	    /* Not a valid command */
+	    fprintf(stderr, "Error: the \"each\" command must be followed by"
+		"another command\n\n");
+	    exit(1);
+	}
 	if (obj != NULL) {
 	    /* Return the values of the current object */
 	    char *rcmds = malloc(strlen(remaining_commands) + 1);
