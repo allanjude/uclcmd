@@ -91,7 +91,6 @@ main(int argc, char *argv[])
 	    mode = 1;
 	    break;
 	case 0:
-	    
 	    break;
 	default:
 	    fprintf(stderr, "Error: Unexpected option: %i\n", ch);
@@ -177,10 +176,10 @@ usage()
 "       UCL         A block of UCL to be written to the specified variable",
 "",
 "EXAMPLES:",
-"       ucl --file vmconfig --get name",
+"       ucl --file vmconfig --get .name",
 "           \"value\"",
 "",
-"       ucl --file vmconfig --keys --raw --get name",
+"       ucl --file vmconfig --keys --raw --get .array.1.name",
 "           name=value",
 "");
     exit(1);
@@ -404,7 +403,7 @@ output_key(const ucl_object_t *obj, const char *key)
 		"value={object}\n", obj->key, obj->len);
 	}
 	if (show_keys == 1)
-	    printf("%s=", obj->key);
+	    printf("%s=", key);
 	printf("{object}\n");
 	break;
     case UCL_ARRAY:
@@ -413,7 +412,7 @@ output_key(const ucl_object_t *obj, const char *key)
 		"value=[array]\n", obj->key, obj->len);
 	}
 	if (show_keys == 1)
-	    printf("%s=", obj->key);
+	    printf("%s=", key);
 	printf("[array]\n");
 	break;
     case UCL_INT:
@@ -422,7 +421,7 @@ output_key(const ucl_object_t *obj, const char *key)
 		obj->key, obj->len, (intmax_t)ucl_object_toint(obj));
 	}
 	if (show_keys == 1)
-	    printf("%s=", obj->key);
+	    printf("%s=", key);
 	printf("%jd\n", (intmax_t)ucl_object_toint(obj));
 	break;
     case UCL_FLOAT:
@@ -431,7 +430,7 @@ output_key(const ucl_object_t *obj, const char *key)
 		obj->key, obj->len, ucl_object_todouble(obj));
 	}
 	if (show_keys == 1)
-	    printf("%s=", obj->key);
+	    printf("%s=", key);
 	printf("%f\n", ucl_object_todouble(obj));
 	break;
     case UCL_STRING:
@@ -440,7 +439,7 @@ output_key(const ucl_object_t *obj, const char *key)
 		"value=\"%s\"\n", obj->key, obj->len, ucl_object_tostring(obj));
 	}
 	if (show_keys == 1)
-	    printf("%s=", obj->key);
+	    printf("%s=", key);
 	if (show_raw == 1)
 	    printf("%s\n", ucl_object_tostring(obj));
 	else
@@ -453,7 +452,7 @@ output_key(const ucl_object_t *obj, const char *key)
 		ucl_object_tostring_forced(obj));
 	}
 	if (show_keys == 1)
-	    printf("%s=", obj->key);
+	    printf("%s=", key);
 	printf("%s\n", ucl_object_tostring_forced(obj));
 	break;
     case UCL_TIME:
@@ -462,7 +461,7 @@ output_key(const ucl_object_t *obj, const char *key)
 		obj->key, obj->len, ucl_object_todouble(obj));
 	}
 	if (show_keys == 1)
-	    printf("%s=", obj->key);
+	    printf("%s=", key);
 	printf("%f\n", ucl_object_todouble(obj));
 	break;
     case UCL_USERDATA:
@@ -471,7 +470,7 @@ output_key(const ucl_object_t *obj, const char *key)
 		"value=%p\n", obj->key, obj->len, obj->value.ud);
 	}
 	if (show_keys == 1)
-	    printf("%s=", obj->key);
+	    printf("%s=", key);
 	printf("{userdata}\n");
 	break;
     default:
