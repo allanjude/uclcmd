@@ -34,13 +34,14 @@
 
 /*
  * XXX: TODO: pass the node name along, and construct it on each etc so the
- * output of: object|each|each|.key will look like: object.key.2.key="value"
+ * output of: |each|each|.key will look like: object.key.2.key="value"
  *
  * --shellvars replace . with _ in output, so it is: object_key_2_key="value"
  *
  */
 
 static int show_keys = 0, show_raw = 0, mode = 0, debug = 0;
+static int output_type = 254;
 static ucl_object_t *root_obj = NULL;
 
 void usage();
@@ -62,20 +63,37 @@ main(int argc, char *argv[])
     struct ucl_parser *parser;
     int ret = 0, r = 0, k = 0, ch;
     FILE *in;
-    
+
+    if (argc == 0) {
+	usage();
+    }
+
+    /* Initialize parser */
+    parser = ucl_parser_new(UCL_PARSER_KEY_LOWERCASE);
+
     /*	options	descriptor */
     static struct option longopts[] = {
-	{ "debug",      optional_argument,      NULL,       'd' },
-	{ "file",       required_argument,      NULL,       'f' },
-	{ "get",        no_argument,            &mode,      0 },
-	{ "keys",       no_argument,            &show_keys, 1 },
-	{ "raw",        no_argument,            &show_raw,  1 },
-	{ "set",        no_argument,            &mode,      1 },
-	{ NULL,         0,                      NULL,       0 }
+	{ "compactjson",no_argument,            &output_type,
+	    UCL_EMIT_JSON_COMPACT },
+	{ "debug",      optional_argument,      NULL,       	'd' },
+	{ "file",       required_argument,      NULL,       	'f' },
+	{ "get",        no_argument,            &mode,      	0 },
+	{ "json",       no_argument,            &output_type,
+	    UCL_EMIT_JSON },
+	{ "keys",       no_argument,            &show_keys, 	1 },
+	{ "raw",        no_argument,            &show_raw,  	1 },
+	{ "set",        no_argument,            &mode,      	1 },
+	{ "ucl",        no_argument,            &output_type,
+	    UCL_EMIT_CONFIG },
+	{ "yaml",       no_argument,            &output_type,	UCL_EMIT_YAML },
+	{ NULL,         0,                      NULL,       	0 }
     };
     
     while ((ch = getopt_long(argc, argv, "df:gkrs", longopts, NULL)) != -1) {
 	switch (ch) {
+	case 'c':
+	    output_type = UCL_EMIT_JSON_COMPACT;
+	    break;
 	case 'd':
 	    if (optarg != NULL) {
 		debug = strtol(optarg, NULL, 0);
@@ -84,7 +102,17 @@ main(int argc, char *argv[])
 	    }
 	    break;
 	case 'f':
+	    ucl_parser_add_file(parser, optarg);
+	    if (ucl_parser_get_error(parser)) {
+		fprintf(stderr, "Error occured: %s\n",
+		    ucl_parser_get_error(parser));
+		ret = 1;
+		goto end;
+	    }
 	    filename = optarg;
+	    break;
+	case 'j':
+	    output_type = UCL_EMIT_JSON;
 	    break;
 	case 'g':
 	    mode = 0;
@@ -97,6 +125,12 @@ main(int argc, char *argv[])
 	    break;
 	case 's':
 	    mode = 1;
+	    break;
+	case 'u':
+	    output_type = UCL_EMIT_CONFIG;
+	    break;
+	case 'y':
+	    output_type = UCL_EMIT_YAML;
 	    break;
 	case 0:
 	    break;
@@ -113,11 +147,7 @@ main(int argc, char *argv[])
 	usage();
     }
     
-    parser = ucl_parser_new(UCL_PARSER_KEY_LOWERCASE);
-    
-    if (filename != NULL) {
-	ucl_parser_add_file(parser, filename);
-    } else {
+    if (filename == NULL) {
 	in = stdin;
 	while (!feof(in) && r < (int)sizeof(inbuf)) {
 	    r += fread(inbuf + r, 1, sizeof(inbuf) - r, in);
@@ -210,6 +240,11 @@ get_mode(char *requested_node)
 	    fprintf(stderr, "DEBUG: Using root node\n");
 	}
 	found_object = root_obj;
+    } else if (strcmp(node_name, ".") == 0) {
+	if (debug > 0) {
+	    fprintf(stderr, "DEBUG: Using root node\n");
+	}
+	found_object = root_obj;
     } else {
 	/* Search for selected node */
 	if (debug > 0) {
@@ -246,7 +281,30 @@ get_mode(char *requested_node)
 	    command_count);
     }
     if (command_count == 0) {
-	output_key(found_object, node_name);
+	unsigned char *result = NULL;
+	switch (output_type) {
+	case 254: /* Text */
+	    output_key(found_object, node_name);	    
+	    break;
+	case UCL_EMIT_CONFIG: /* UCL */
+	    result = ucl_object_emit(found_object, output_type);
+	    break;
+	case UCL_EMIT_JSON: /* JSON */
+	    result = ucl_object_emit(found_object, output_type);
+	    break;
+	case UCL_EMIT_JSON_COMPACT: /* Compact JSON */
+	    result = ucl_object_emit(found_object, output_type);
+	    break;
+	case UCL_EMIT_YAML: /* YAML */
+	    result = ucl_object_emit(found_object, output_type);
+	    break;
+	default:
+	    fprintf(stderr, "Error: Invalid output mode: %i\n",
+		output_type);
+	    break;
+	}
+	printf("%s\n", result);
+	free(result);
     }
 }
 
