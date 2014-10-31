@@ -293,23 +293,29 @@ get_mode(char *requested_node)
 	    break;
 	case UCL_EMIT_CONFIG: /* UCL */
 	    result = ucl_object_emit(found_object, output_type);
+	    printf("%s\n", result);
+	    free(result);
 	    break;
 	case UCL_EMIT_JSON: /* JSON */
 	    result = ucl_object_emit(found_object, output_type);
+	    printf("%s\n", result);
+	    free(result);
 	    break;
 	case UCL_EMIT_JSON_COMPACT: /* Compact JSON */
 	    result = ucl_object_emit(found_object, output_type);
+	    printf("%s\n", result);
+	    free(result);
 	    break;
 	case UCL_EMIT_YAML: /* YAML */
 	    result = ucl_object_emit(found_object, output_type);
+	    printf("%s\n", result);
+	    free(result);
 	    break;
 	default:
 	    fprintf(stderr, "Error: Invalid output mode: %i\n",
 		output_type);
 	    break;
 	}
-	printf("%s\n", result);
-	free(result);
     }
 }
 
