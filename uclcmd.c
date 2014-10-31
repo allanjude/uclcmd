@@ -198,20 +198,25 @@ end:
 void
 usage()
 {
-    fprintf(stderr, "%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n"
-"%s\n%s\n%s\n%s\n%s\n%s\n",
-"Usage: ucl [--debug] [--file filename] [--keys] [--raw] --get variable",
-"       ucl [--debug] [--file filename] [--keys] [--raw] --set variable UCL",
+    fprintf(stderr, "%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n"
+"%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n"
+"%s\n%s\n%s\n%s\n",
+"Usage: ucl [-cdjkruy] [-f filename] --get variable",
+"       ucl [-cdjkruy] [-f filename] --set variable UCL",
 "",
 "OPTIONS:",
-"       --debug     enable verbose debugging output",
-"       --file      path to a file to read or write",
-"       --keys      show key=value rather than just the value",
-"       --raw       do not enclose strings in quotes",
-"       --get       read a variable",
-"       --set       write a block of UCL ",
-"       variable    The key of the variable to read, in object notation",
-"       UCL         A block of UCL to be written to the specified variable",
+"       --compactjson	output compacted JSON",
+"       --debug     	enable verbose debugging output",
+"       --file      	path to a file to read or write",
+"       --json		output pretty JSON",
+"       --keys      	show key=value rather than just the value",
+"       --raw       	do not enclose strings in quotes",
+"       --get       	read a variable",
+"       --set       	write a block of UCL ",
+"       --ucl     	output universal config language",
+"       --yaml     	output YAML",
+"       variable    	The key of the variable to read, in object notation",
+"       UCL         	A block of UCL to be written to the specified variable",
 "",
 "EXAMPLES:",
 "       ucl --file vmconfig --get .name",
