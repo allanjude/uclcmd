@@ -46,10 +46,10 @@ static ucl_object_t *root_obj = NULL;
 
 void usage();
 void get_mode(char *requested_node);
-int process_get_command(const ucl_object_t *obj, const char *command_str,
-    char *remaining_commands, int recurse);
+int process_get_command(const ucl_object_t *obj, char *nodepath,
+    const char *command_str, char *remaining_commands, int recurse);
 void set_mode(char *requested_node, char *data);
-void output_key(const ucl_object_t *obj, const char *key);
+void output_key(const ucl_object_t *obj, char *nodepath, const char *key);
 
 /*
  * This application provides a shell scripting friendly interface for reading
@@ -235,6 +235,7 @@ get_mode(char *requested_node)
     char *cmd = requested_node;
     char *node_name = strsep(&cmd, "|");
     char *command_str = strsep(&cmd, "|");
+    char *nodepath = "\0";
     int command_count = 0, i;
     
     found_object = root_obj;
@@ -263,7 +264,8 @@ get_mode(char *requested_node)
 	    fprintf(stderr, "DEBUG: Performing \"%s\" command on \"%s\"...\n",
 		command_str, node_name);
 	}
-	int done = process_get_command(found_object, command_str, cmd, 1);
+	int done = process_get_command(found_object, nodepath, command_str,
+	    cmd, 1);
 	if (debug >= 2) {
 	    fprintf(stderr, "DEBUG: Finished process, did: %i commands\n",
 		done);
@@ -289,7 +291,7 @@ get_mode(char *requested_node)
 	unsigned char *result = NULL;
 	switch (output_type) {
 	case 254: /* Text */
-	    output_key(found_object, node_name);	    
+	    output_key(found_object, nodepath, node_name);
 	    break;
 	case UCL_EMIT_CONFIG: /* UCL */
 	    result = ucl_object_emit(found_object, output_type);
@@ -320,13 +322,14 @@ get_mode(char *requested_node)
 }
 
 int
-process_get_command(const ucl_object_t *obj, const char *command_str,
-    char *remaining_commands, int recurse)
+process_get_command(const ucl_object_t *obj, char *nodepath,
+    const char *command_str, char *remaining_commands, int recurse)
 {
     ucl_object_iter_t it = NULL;
     const ucl_object_t *cur;
     int command_count = 0, loopcount = 0;
     int recurse_level = recurse;
+    int arrindex = 0;
     
     if (debug >= 2) {
 	fprintf(stderr, "DEBUG: Got command: %s - next command: %s\n",
@@ -400,7 +403,17 @@ process_get_command(const ucl_object_t *obj, const char *command_str,
 	if (obj != NULL) {
 	    /* Return the values of the current object */
 	    while ((cur = ucl_iterate_object(obj, &it, true))) {
-		output_key(cur, ucl_object_key(cur));
+		char *newkey = NULL;
+		if (cur == NULL) {
+		    continue;
+		}
+		if (obj->type == UCL_ARRAY) {
+		    asprintf(&newkey, ".%i", arrindex);
+		    arrindex++;
+		} else {
+		    asprintf(&newkey, ".%s", ucl_object_key(cur));
+		}
+		output_key(cur, nodepath, newkey);
 		loopcount++;
 	    }
 	}
@@ -410,7 +423,17 @@ process_get_command(const ucl_object_t *obj, const char *command_str,
     } else if (strcmp(command_str, "each") == 0) {
 	if (remaining_commands == NULL) {
 	    while ((cur = ucl_iterate_object(obj, &it, true))) {
-		output_key(cur, command_str);
+		char *newkey = NULL;
+		if (cur == NULL) {
+		    continue;
+		}
+		if (obj->type == UCL_ARRAY) {
+		    asprintf(&newkey, ".%i", arrindex);
+		    arrindex++;
+		} else {
+		    asprintf(&newkey, ".%s", ucl_object_key(cur));
+		}
+		output_key(cur, nodepath, newkey);
 		loopcount++;
 	    }
 	} else if (obj != NULL) {
@@ -420,8 +443,19 @@ process_get_command(const ucl_object_t *obj, const char *command_str,
 	    char *next_command = strsep(&rcmds, "|");
 	    if (next_command != NULL) {
 		while ((cur = ucl_iterate_object(obj, &it, true))) {
-		    recurse_level = process_get_command(cur, next_command,
-			rcmds, recurse + 1);
+		    char *newnodepath = NULL;
+		    if (cur == NULL) {
+			continue;
+		    }
+		    if (obj->type == UCL_ARRAY) {
+			asprintf(&newnodepath, "%s.%i", nodepath, arrindex);
+			arrindex++;
+		    } else {
+			asprintf(&newnodepath, "%s.%s", nodepath,
+			    ucl_object_key(cur));
+		    }
+		    recurse_level = process_get_command(cur, newnodepath,
+			next_command, rcmds, recurse + 1);
 		    loopcount++;
 		}
 	    }
@@ -438,15 +472,29 @@ process_get_command(const ucl_object_t *obj, const char *command_str,
 	cur = ucl_lookup_path(obj, command_str);
 	/* If this is the last thing on the stack, output */
 	if (remaining_commands == NULL) {
-	    output_key(cur, command_str);
+	    /* Would also check cur==null here, but that breaks |keys */
+	    output_key(cur, nodepath, command_str);
 	} else {
 	    /* Return the values of the current object */
 	    char *rcmds = malloc(strlen(remaining_commands) + 1);
 	    strcpy(rcmds, remaining_commands);
 	    char *next_command = strsep(&rcmds, "|");
 	    if (next_command != NULL) {
-		recurse_level = process_get_command(cur, next_command,
-		    rcmds, recurse + 1);
+		char *newnodepath = NULL;
+		if (obj->type == UCL_ARRAY) {
+		    asprintf(&newnodepath, "%s.%i", nodepath, arrindex);
+		    arrindex++;
+		} else {
+		    asprintf(&newnodepath, "%s.%s", nodepath,
+			ucl_object_key(cur));
+		}
+		if (debug > 2) {
+		    fprintf(stderr, "DEBUG: Calling recurse with %s.%s on %s\n",
+			newnodepath, next_command,
+			ucl_object_emit(cur, UCL_EMIT_CONFIG));
+		}
+		recurse_level = process_get_command(cur, newnodepath,
+		    next_command, rcmds, recurse + 1);
 	    }
 	}
     } else {
@@ -471,11 +519,11 @@ set_mode(char *requested_node, char *data)
 }
 
 void
-output_key(const ucl_object_t *obj, const char *key)
+output_key(const ucl_object_t *obj, char *nodepath, const char *key)
 {
     if (obj == NULL) {
 	if (show_keys == 1) {
-	    printf("%s=", key);
+	    printf("%s%s=", nodepath, key);
 	}
 	printf("null\n");
 	return;
@@ -487,7 +535,7 @@ output_key(const ucl_object_t *obj, const char *key)
 		"value={object}\n", obj->key, obj->len);
 	}
 	if (show_keys == 1)
-	    printf("%s=", key);
+	    printf("%s%s=", nodepath, key);
 	printf("{object}\n");
 	break;
     case UCL_ARRAY:
@@ -496,7 +544,7 @@ output_key(const ucl_object_t *obj, const char *key)
 		"value=[array]\n", obj->key, obj->len);
 	}
 	if (show_keys == 1)
-	    printf("%s=", key);
+	    printf("%s%s=", nodepath, key);
 	printf("[array]\n");
 	break;
     case UCL_INT:
@@ -505,7 +553,7 @@ output_key(const ucl_object_t *obj, const char *key)
 		obj->key, obj->len, (intmax_t)ucl_object_toint(obj));
 	}
 	if (show_keys == 1)
-	    printf("%s=", key);
+	    printf("%s%s=", nodepath, key);
 	printf("%jd\n", (intmax_t)ucl_object_toint(obj));
 	break;
     case UCL_FLOAT:
@@ -514,7 +562,7 @@ output_key(const ucl_object_t *obj, const char *key)
 		obj->key, obj->len, ucl_object_todouble(obj));
 	}
 	if (show_keys == 1)
-	    printf("%s=", key);
+	    printf("%s%s=", nodepath, key);
 	printf("%f\n", ucl_object_todouble(obj));
 	break;
     case UCL_STRING:
@@ -523,7 +571,7 @@ output_key(const ucl_object_t *obj, const char *key)
 		"value=\"%s\"\n", obj->key, obj->len, ucl_object_tostring(obj));
 	}
 	if (show_keys == 1)
-	    printf("%s=", key);
+	    printf("%s%s=", nodepath, key);
 	if (show_raw == 1)
 	    printf("%s\n", ucl_object_tostring(obj));
 	else
@@ -536,7 +584,7 @@ output_key(const ucl_object_t *obj, const char *key)
 		ucl_object_tostring_forced(obj));
 	}
 	if (show_keys == 1)
-	    printf("%s=", key);
+	    printf("%s%s=", nodepath, key);
 	printf("%s\n", ucl_object_tostring_forced(obj));
 	break;
     case UCL_TIME:
@@ -545,7 +593,7 @@ output_key(const ucl_object_t *obj, const char *key)
 		obj->key, obj->len, ucl_object_todouble(obj));
 	}
 	if (show_keys == 1)
-	    printf("%s=", key);
+	    printf("%s%s=", nodepath, key);
 	printf("%f\n", ucl_object_todouble(obj));
 	break;
     case UCL_USERDATA:
@@ -554,7 +602,7 @@ output_key(const ucl_object_t *obj, const char *key)
 		"value=%p\n", obj->key, obj->len, obj->value.ud);
 	}
 	if (show_keys == 1)
-	    printf("%s=", key);
+	    printf("%s%s=", nodepath, key);
 	printf("{userdata}\n");
 	break;
     default:
