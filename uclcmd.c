@@ -33,9 +33,7 @@
 #include <ucl.h>
 
 /*
- * XXX: TODO: pass the node name along, and construct it on each etc so the
- * output of: |each|each|.key will look like: object.key.2.key="value"
- *
+ * XXX: TODO:
  * --shellvars replace . with _ in output, so it is: object_key_2_key="value"
  *
  */
