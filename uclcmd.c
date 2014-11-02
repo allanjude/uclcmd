@@ -34,13 +34,13 @@
 
 /*
  * XXX: TODO:
- * --shellvars replace . with _ in output, so it is: object_key_2_key="value"
  *
  */
 
 static int show_keys = 0, show_raw = 0, mode = 0, debug = 0;
 static int output_type = 254;
 static ucl_object_t *root_obj = NULL;
+static char *sepchar = ".";
 
 void usage();
 void get_mode(char *requested_node);
@@ -48,6 +48,7 @@ int process_get_command(const ucl_object_t *obj, char *nodepath,
     const char *command_str, char *remaining_commands, int recurse);
 void set_mode(char *requested_node, char *data);
 void output_key(const ucl_object_t *obj, char *nodepath, const char *key);
+void replace_sep(char *key, char *oldsep, char *newsep);
 
 /*
  * This application provides a shell scripting friendly interface for reading
@@ -71,7 +72,7 @@ main(int argc, char *argv[])
 
     /*	options	descriptor */
     static struct option longopts[] = {
-	{ "compactjson",no_argument,            &output_type,
+	{ "cjson",	no_argument,            &output_type,
 	    UCL_EMIT_JSON_COMPACT },
 	{ "debug",      optional_argument,      NULL,       	'd' },
 	{ "file",       required_argument,      NULL,       	'f' },
@@ -81,13 +82,14 @@ main(int argc, char *argv[])
 	{ "keys",       no_argument,            &show_keys, 	1 },
 	{ "raw",        no_argument,            &show_raw,  	1 },
 	{ "set",        no_argument,            &mode,      	1 },
+	{ "shellvars",  no_argument,            NULL,      	'v' },
 	{ "ucl",        no_argument,            &output_type,
 	    UCL_EMIT_CONFIG },
 	{ "yaml",       no_argument,            &output_type,	UCL_EMIT_YAML },
 	{ NULL,         0,                      NULL,       	0 }
     };
     
-    while ((ch = getopt_long(argc, argv, "cdf:gjkrsuy", longopts, NULL)) != -1) {
+    while ((ch = getopt_long(argc, argv, "cdf:gjkrsuvy", longopts, NULL)) != -1) {
 	switch (ch) {
 	case 'c':
 	    output_type = UCL_EMIT_JSON_COMPACT;
@@ -127,6 +129,9 @@ main(int argc, char *argv[])
 	case 'u':
 	    output_type = UCL_EMIT_CONFIG;
 	    break;
+	case 'v':
+	    sepchar = "_";
+	    break;
 	case 'y':
 	    output_type = UCL_EMIT_YAML;
 	    break;
@@ -145,31 +150,31 @@ main(int argc, char *argv[])
 	usage();
     }
     
-    if (filename == NULL) {
-	in = stdin;
-	while (!feof(in) && r < (int)sizeof(inbuf)) {
-	    r += fread(inbuf + r, 1, sizeof(inbuf) - r, in);
-	}
-	ucl_parser_add_chunk(parser, inbuf, r);
-	fclose(in);
-    }
-    
-    if (ucl_parser_get_error(parser)) {
-	fprintf(stderr, "Error occured: %s\n", ucl_parser_get_error(parser));
-	ret = 1;
-	goto end;
-    }
-    
-    root_obj = ucl_parser_get_object(parser);
-    if (ucl_parser_get_error (parser)) {
-	fprintf(stderr, "Error: Parse Error occured: %s\n",
-	    ucl_parser_get_error(parser));
-	ret = 1;
-	goto end;
-    }
-    
     if (mode == 0) { /* Get Mode */
 	if (argc > 0) {
+	    if (filename == NULL) {
+		in = stdin;
+		while (!feof(in) && r < (int)sizeof(inbuf)) {
+		    r += fread(inbuf + r, 1, sizeof(inbuf) - r, in);
+		}
+		ucl_parser_add_chunk(parser, inbuf, r);
+		fclose(in);
+	    }
+
+	    if (ucl_parser_get_error(parser)) {
+		fprintf(stderr, "Error occured: %s\n", ucl_parser_get_error(parser));
+		ret = 1;
+		goto end;
+	    }
+
+	    root_obj = ucl_parser_get_object(parser);
+	    if (ucl_parser_get_error (parser)) {
+		fprintf(stderr, "Error: Parse Error occured: %s\n",
+		    ucl_parser_get_error(parser));
+		ret = 1;
+		goto end;
+	    }
+
 	    for (k = 0; k < argc; k++) {
 		get_mode(argv[k]);
 	    }
@@ -180,6 +185,28 @@ main(int argc, char *argv[])
 	fprintf(stderr, "Error: Set mode not implemented yet.\n");
 	ret = 99;
 	goto end;
+	/* get UCL to add from stdin */
+	in = stdin;
+	while (!feof(in) && r < (int)sizeof(inbuf)) {
+	    r += fread(inbuf + r, 1, sizeof(inbuf) - r, in);
+	}
+	ucl_parser_add_chunk(parser, inbuf, r);
+	fclose(in);
+
+	if (ucl_parser_get_error(parser)) {
+	    fprintf(stderr, "Error occured: %s\n", ucl_parser_get_error(parser));
+	    ret = 1;
+	    goto end;
+	}
+
+	root_obj = ucl_parser_get_object(parser);
+	if (ucl_parser_get_error (parser)) {
+	    fprintf(stderr, "Error: Parse Error occured: %s\n",
+		ucl_parser_get_error(parser));
+	    ret = 1;
+	    goto end;
+	}
+	/* Merge or Append here */
     }
 
 end:
@@ -198,29 +225,30 @@ usage()
 {
     fprintf(stderr, "%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n"
 "%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n"
-"%s\n%s\n%s\n%s\n",
-"Usage: ucl [-cdjkruy] [-f filename] --get variable",
-"       ucl [-cdjkruy] [-f filename] --set variable UCL",
+"%s\n%s\n%s\n%s\n%s\n",
+"Usage: uclcmd [-cdjkruvy] [-f filename] --get variable",
+"       uclcmd [-cdjkruvy] [-f filename] --set variable UCL",
 "",
 "OPTIONS:",
-"       --compactjson	output compacted JSON",
-"       --debug     	enable verbose debugging output",
-"       --file      	path to a file to read or write",
-"       --json		output pretty JSON",
-"       --keys      	show key=value rather than just the value",
-"       --raw       	do not enclose strings in quotes",
-"       --get       	read a variable",
-"       --set       	write a block of UCL ",
-"       --ucl     	output universal config language",
-"       --yaml     	output YAML",
+"       -c --cjson	output compacted JSON",
+"       -d --debug     	enable verbose debugging output",
+"       -f --file      	path to a file to read or write",
+"       -j --json	output pretty JSON",
+"       -k --keys      	show key=value rather than just the value",
+"       -r --raw       	do not enclose strings in quotes",
+"       -g --get       	read a variable",
+"       -s --set       	write a block of UCL ",
+"       -u --ucl     	output universal config language",
+"       -v --shellvars	keys are output with underscores instead of dots",
+"       -y --yaml     	output YAML",
 "       variable    	The key of the variable to read, in object notation",
 "       UCL         	A block of UCL to be written to the specified variable",
 "",
 "EXAMPLES:",
-"       ucl --file vmconfig --get .name",
+"       uclcmd --file vmconfig --get .name",
 "           \"value\"",
 "",
-"       ucl --file vmconfig --keys --raw --get .array.1.name",
+"       uclcmd --file vmconfig --keys --raw --get .array.1.name",
 "           name=value",
 "");
     exit(1);
@@ -250,11 +278,16 @@ get_mode(char *requested_node)
 	}
 	found_object = root_obj;
     } else {
+	if (strncmp(node_name, ".", 1) == 0) {
+	    /* Removing leading dot */
+	    node_name++;
+	}
 	/* Search for selected node */
 	if (debug > 0) {
 	    fprintf(stderr, "DEBUG: Searching node %s\n", node_name);
 	}
 	found_object = ucl_lookup_path(found_object, node_name);
+	asprintf(&nodepath, "%s", node_name);
     }
     
     while (command_str != NULL) {
@@ -289,7 +322,7 @@ get_mode(char *requested_node)
 	unsigned char *result = NULL;
 	switch (output_type) {
 	case 254: /* Text */
-	    output_key(found_object, nodepath, node_name);
+	    output_key(found_object, nodepath, "");
 	    break;
 	case UCL_EMIT_CONFIG: /* UCL */
 	    result = ucl_object_emit(found_object, output_type);
@@ -341,7 +374,7 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 	    printf("0\n");
 	} else {
 	    if (show_keys == 1)
-		printf("%s=", obj->key);
+		printf("%s%s%s=", nodepath, sepchar, obj->key);
 	    printf("%u\n", obj->len);
 	}
     } else if (strcmp(command_str, "type") == 0) {
@@ -352,7 +385,7 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 	    printf("null\n");
 	} else {
 	    if (show_keys == 1)
-		printf("%s=", obj->key);
+		printf("%s%s%s=", nodepath, sepchar, obj->key);
 	    switch(obj->type) {
 	    case UCL_OBJECT:
 		printf("object\n");
@@ -406,13 +439,14 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 		    continue;
 		}
 		if (obj->type == UCL_ARRAY) {
-		    asprintf(&newkey, ".%i", arrindex);
+		    asprintf(&newkey, "%s%i", sepchar, arrindex);
 		    arrindex++;
 		} else {
-		    asprintf(&newkey, ".%s", ucl_object_key(cur));
+		    asprintf(&newkey, "%s%s", sepchar, ucl_object_key(cur));
 		}
 		output_key(cur, nodepath, newkey);
 		loopcount++;
+		free(newkey);
 	    }
 	}
 	if (loopcount == 0 && debug > 0) {
@@ -426,13 +460,14 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 		    continue;
 		}
 		if (obj->type == UCL_ARRAY) {
-		    asprintf(&newkey, ".%i", arrindex);
+		    asprintf(&newkey, "%s%i", sepchar, arrindex);
 		    arrindex++;
 		} else {
-		    asprintf(&newkey, ".%s", ucl_object_key(cur));
+		    asprintf(&newkey, "%s%s", sepchar, ucl_object_key(cur));
 		}
 		output_key(cur, nodepath, newkey);
 		loopcount++;
+		free(newkey);
 	    }
 	} else if (obj != NULL) {
 	    /* Return the values of the current object */
@@ -446,15 +481,17 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 			continue;
 		    }
 		    if (obj->type == UCL_ARRAY) {
-			asprintf(&newnodepath, "%s.%i", nodepath, arrindex);
+			asprintf(&newnodepath, "%s%s%i", nodepath, sepchar,
+			    arrindex);
 			arrindex++;
 		    } else {
-			asprintf(&newnodepath, "%s.%s", nodepath,
+			asprintf(&newnodepath, "%s%s%s", nodepath, sepchar,
 			    ucl_object_key(cur));
 		    }
 		    recurse_level = process_get_command(cur, newnodepath,
 			next_command, rcmds, recurse + 1);
 		    loopcount++;
+		    free(newnodepath);
 		}
 	    }
 	}
@@ -480,10 +517,11 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 	    if (next_command != NULL) {
 		char *newnodepath = NULL;
 		if (obj->type == UCL_ARRAY) {
-		    asprintf(&newnodepath, "%s.%i", nodepath, arrindex);
+		    asprintf(&newnodepath, "%s%s%i", nodepath, sepchar,
+			arrindex);
 		    arrindex++;
 		} else {
-		    asprintf(&newnodepath, "%s.%s", nodepath,
+		    asprintf(&newnodepath, "%s%s%s", nodepath, sepchar,
 			ucl_object_key(cur));
 		}
 		if (debug > 2) {
@@ -493,6 +531,7 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 		}
 		recurse_level = process_get_command(cur, newnodepath,
 		    next_command, rcmds, recurse + 1);
+		free(newnodepath);
 	    }
 	}
     } else {
@@ -517,8 +556,11 @@ set_mode(char *requested_node, char *data)
 }
 
 void
-output_key(const ucl_object_t *obj, char *nodepath, const char *key)
+output_key(const ucl_object_t *obj, char *nodepath, const char *inkey)
 {
+    char *key = strdup(inkey);
+    replace_sep(nodepath, ".", sepchar);
+    replace_sep(key, ".", sepchar);
     if (obj == NULL) {
 	if (show_keys == 1) {
 	    printf("%s%s=", nodepath, key);
@@ -610,5 +652,17 @@ output_key(const ucl_object_t *obj, char *nodepath, const char *key)
 		"value=null\n", obj->key, obj->len);
 	}
 	break;
+    }
+}
+
+void
+replace_sep(char *key, char *oldsep, char *newsep) {
+    int idx = 0;
+    if (oldsep == newsep) return;
+    while (key[idx] != '\0') {
+	if (key[idx] == oldsep[0]) {
+	    key[idx] = newsep[0];
+	}
+	idx++;
     }
 }
