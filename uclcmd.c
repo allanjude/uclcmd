@@ -32,6 +32,10 @@
 
 #include <ucl.h>
 
+#ifndef __DECONST
+#define __DECONST(type, var)    ((type)(uintptr_t)(const void *)(var))
+#endif
+
 /*
  * XXX: TODO:
  *
@@ -62,8 +66,11 @@ main(int argc, char *argv[])
     unsigned char inbuf[8192];
     struct ucl_parser *parser;
     struct ucl_parser *setparser = NULL;
+    ucl_object_t *dst_obj = NULL;
+    ucl_object_t *sub_obj = NULL;
     ucl_object_t *set_obj = NULL;
     int ret = 0, r = 0, k = 0, ch;
+    bool success = false;
     FILE *in;
 
     if (argc == 0) {
@@ -197,52 +204,114 @@ main(int argc, char *argv[])
     case 1: /* Set Mode */
 	/* Parse the original UCL */
 	if (ucl_parser_get_error(parser)) {
-	    fprintf(stderr, "Error occured: %s\n", ucl_parser_get_error(parser));
+	    fprintf(stderr, "Error S1 occured: %s\n", ucl_parser_get_error(parser));
 	    ret = 1;
 	    goto end;
 	}
+	char *dst_key = argv[0];
+	char *dst_root = strdup(dst_key);
+	char *dst_frag = strrchr(dst_root, '.');
 
 	root_obj = ucl_parser_get_object(parser);
 	if (ucl_parser_get_error (parser)) {
-	    fprintf(stderr, "Error: Parse Error occured: %s\n",
+	    fprintf(stderr, "Error: S2 Parse Error occured: %s\n",
 		ucl_parser_get_error(parser));
 	    ret = 1;
 	    goto end;
 	}
 
-	/* get UCL to add from stdin */
-	in = stdin;
-	while (!feof(in) && r < (int)sizeof(inbuf)) {
-	    r += fread(inbuf + r, 1, sizeof(inbuf) - r, in);
-	}
 	setparser = ucl_parser_new(UCL_PARSER_KEY_LOWERCASE);
-	ucl_parser_add_chunk(setparser, inbuf, r);
-	fclose(in);
-
-	if (ucl_parser_get_error(setparser)) {
-	    fprintf(stderr, "Error occured: %s\n", ucl_parser_get_error(setparser));
-	    ret = 1;
-	    goto end;
+	/* Lookup the destination to write to */
+	if (debug > 0) {
+	    fprintf(stderr, "selecting key: %s\n", dst_key);
+	    fprintf(stderr, "selected sub-key: %s\n", dst_frag);
+	}
+	if (dst_frag == NULL || strlen(dst_frag) == 0) {
+	    dst_frag = dst_key;
+	    dst_obj = root_obj;
+	    sub_obj = __DECONST(ucl_object_t *,
+		ucl_object_find_key(dst_obj, dst_frag));
+	} else {
+	    dst_frag[0] = '\0';
+	    dst_frag++;
+	    dst_obj = __DECONST(ucl_object_t *,
+		ucl_lookup_path(root_obj, dst_root));
+	    if (dst_obj == NULL) {
+		ret = 1;
+		goto end;
+	    }
+	    if (dst_obj->type == UCL_ARRAY) {
+		sub_obj = __DECONST(ucl_object_t *,
+		    ucl_lookup_path(root_obj, dst_key));
+	    } else {
+		sub_obj = __DECONST(ucl_object_t *,
+		    ucl_object_find_key(dst_obj, dst_frag));
+	    }
+	}
+	if (sub_obj == NULL) {
+	    sub_obj = dst_obj;
 	}
 
-	set_obj = ucl_parser_get_object(setparser);
+	if (argc > 1) {
+	    if (sub_obj->type != UCL_OBJECT && sub_obj->type != UCL_ARRAY) {
+		/* Destination is a string, number, etc */
+		set_obj = ucl_object_fromstring_common(argv[1], 0,
+		    UCL_STRING_PARSE);
+	    } else {
+		/* Destination is an Object or Array */
+		success = ucl_parser_add_string(setparser, argv[1], 0);
+		if (ucl_parser_get_error(setparser)) {
+		    fprintf(stderr, "Error S3 occured: %s\n",
+			ucl_parser_get_error(setparser));
+		    ret = 1;
+		    goto end;
+		}
+		set_obj = ucl_parser_get_object(setparser);
+	    }
+	} else {
+	    /* get UCL to add from stdin */
+	    in = stdin;
+	    while (!feof(in) && r < (int)sizeof(inbuf)) {
+		r += fread(inbuf + r, 1, sizeof(inbuf) - r, in);
+	    }
+	    ucl_parser_add_chunk(setparser, inbuf, r);
+	    fclose(in);
+
+	    if (ucl_parser_get_error(setparser)) {
+		fprintf(stderr, "Error S4 occured: %s\n",
+		    ucl_parser_get_error(setparser));
+		ret = 1;
+		goto end;
+	    }
+	    set_obj = ucl_parser_get_object(setparser);
+	}
+
 	if (ucl_parser_get_error(setparser)) {
-	    fprintf(stderr, "Error: Parse Error occured: %s\n",
+	    fprintf(stderr, "Error: S5 Parse Error occured: %s\n",
 		ucl_parser_get_error(setparser));
 	    ret = 1;
 	    goto end;
 	}
 	/* Add it to the object here */
-	printf("selecting key: %s\n", argv[0]);
-	printf("checking: %i\n", set_obj->type);
-	ret = ucl_object_replace_key(root_obj, set_obj,
-	    argv[0], 0, false);
-	printf("Object status: %i\n", ret);
-	fprintf(stderr, "Error: Parse Error occured: %s\n",
-	    ucl_parser_get_error(setparser));
-	fprintf(stderr, "Error: Parse Error occured: %s\n",
-	    ucl_parser_get_error(parser));
-	get_mode(dot);
+	if (debug > 0) {
+	    fprintf(stderr, "Inserting key %s to root: %s\n", dst_frag, dst_root);
+	}
+
+	if (dst_obj->type == UCL_ARRAY) {
+	    ucl_object_t *trash = ucl_array_delete(dst_obj, sub_obj);
+	    ucl_object_unref(trash);
+	    success = ucl_array_append(dst_obj, set_obj);
+	    success = true;
+	} else {
+	    success = ucl_object_replace_key(dst_obj, set_obj,
+		dst_frag, 0, false);
+	}
+	if (success) {
+	    get_mode(dot);
+	} else {
+	    fprintf(stderr, "Error: Failed to apply the set operation.\n");    
+	    ret = 1;
+	}
 	break;
     case 2: /* merge */
 	fprintf(stderr, "Error: Merge mode not implemented yet.\n");
@@ -296,13 +365,13 @@ end:
 	ucl_parser_free(parser);
     }
     if (setparser != NULL) {
-	ucl_parser_free(parser);
+	ucl_parser_free(setparser);
     }
     if (root_obj != NULL) {
 	ucl_object_unref(root_obj);
     }
     if (set_obj != NULL) {
-	ucl_object_unref(root_obj);
+	ucl_object_unref(set_obj);
     }
 
     return ret;
