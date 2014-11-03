@@ -40,6 +40,7 @@
 static int show_keys = 0, show_raw = 0, mode = 0, debug = 0;
 static int output_type = 254;
 static ucl_object_t *root_obj = NULL;
+static char *dot = ".";
 static char *sepchar = ".";
 
 void usage();
@@ -60,6 +61,8 @@ main(int argc, char *argv[])
     const char *filename = NULL;
     unsigned char inbuf[8192];
     struct ucl_parser *parser;
+    struct ucl_parser *setparser = NULL;
+    ucl_object_t *set_obj = NULL;
     int ret = 0, r = 0, k = 0, ch;
     FILE *in;
 
@@ -80,7 +83,9 @@ main(int argc, char *argv[])
 	{ "json",       no_argument,            &output_type,
 	    UCL_EMIT_JSON },
 	{ "keys",       no_argument,            &show_keys, 	1 },
-	{ "raw",        no_argument,            &show_raw,  	1 },
+	{ "merge",    	no_argument,            &mode,  	2 },
+	{ "noquote",    no_argument,            &show_raw,  	1 },
+	{ "remove",     no_argument,            &mode,      	3 },
 	{ "set",        no_argument,            &mode,      	1 },
 	{ "shellvars",  no_argument,            NULL,      	'v' },
 	{ "ucl",        no_argument,            &output_type,
@@ -89,7 +94,7 @@ main(int argc, char *argv[])
 	{ NULL,         0,                      NULL,       	0 }
     };
     
-    while ((ch = getopt_long(argc, argv, "cdf:gjkrsuvy", longopts, NULL)) != -1) {
+    while ((ch = getopt_long(argc, argv, "cdf:gjkmqrsuvy", longopts, NULL)) != -1) {
 	switch (ch) {
 	case 'c':
 	    output_type = UCL_EMIT_JSON_COMPACT;
@@ -120,8 +125,14 @@ main(int argc, char *argv[])
 	case 'k':
 	    show_keys = 1;
 	    break;
-	case 'r':
+	case 'm':
+	    mode = 2;
+	    break;
+	case 'q':
 	    show_raw = 1;
+	    break;
+	case 'r':
+	    mode = 3;
 	    break;
 	case 's':
 	    mode = 1;
@@ -150,7 +161,8 @@ main(int argc, char *argv[])
 	usage();
     }
     
-    if (mode == 0) { /* Get Mode */
+    switch (mode) {
+    case 0: /* Get Mode */
 	if (argc > 0) {
 	    if (filename == NULL) {
 		in = stdin;
@@ -181,8 +193,59 @@ main(int argc, char *argv[])
 	} else {
 	    fprintf(stderr, "Error: No search performed.\n");
 	}
-    } else if (mode == 1) { /* Set Mode */
-	fprintf(stderr, "Error: Set mode not implemented yet.\n");
+	break;
+    case 1: /* Set Mode */
+	/* Parse the original UCL */
+	if (ucl_parser_get_error(parser)) {
+	    fprintf(stderr, "Error occured: %s\n", ucl_parser_get_error(parser));
+	    ret = 1;
+	    goto end;
+	}
+
+	root_obj = ucl_parser_get_object(parser);
+	if (ucl_parser_get_error (parser)) {
+	    fprintf(stderr, "Error: Parse Error occured: %s\n",
+		ucl_parser_get_error(parser));
+	    ret = 1;
+	    goto end;
+	}
+
+	/* get UCL to add from stdin */
+	in = stdin;
+	while (!feof(in) && r < (int)sizeof(inbuf)) {
+	    r += fread(inbuf + r, 1, sizeof(inbuf) - r, in);
+	}
+	setparser = ucl_parser_new(UCL_PARSER_KEY_LOWERCASE);
+	ucl_parser_add_chunk(setparser, inbuf, r);
+	fclose(in);
+
+	if (ucl_parser_get_error(setparser)) {
+	    fprintf(stderr, "Error occured: %s\n", ucl_parser_get_error(setparser));
+	    ret = 1;
+	    goto end;
+	}
+
+	set_obj = ucl_parser_get_object(setparser);
+	if (ucl_parser_get_error(setparser)) {
+	    fprintf(stderr, "Error: Parse Error occured: %s\n",
+		ucl_parser_get_error(setparser));
+	    ret = 1;
+	    goto end;
+	}
+	/* Add it to the object here */
+	printf("selecting key: %s\n", argv[0]);
+	printf("checking: %i\n", set_obj->type);
+	ret = ucl_object_replace_key(root_obj, set_obj,
+	    argv[0], 0, false);
+	printf("Object status: %i\n", ret);
+	fprintf(stderr, "Error: Parse Error occured: %s\n",
+	    ucl_parser_get_error(setparser));
+	fprintf(stderr, "Error: Parse Error occured: %s\n",
+	    ucl_parser_get_error(parser));
+	get_mode(dot);
+	break;
+    case 2: /* merge */
+	fprintf(stderr, "Error: Merge mode not implemented yet.\n");
 	ret = 99;
 	goto end;
 	/* get UCL to add from stdin */
@@ -206,14 +269,39 @@ main(int argc, char *argv[])
 	    ret = 1;
 	    goto end;
 	}
-	/* Merge or Append here */
+	break;
+    case 3: /* remove */
+	/* Parse the original UCL */
+	if (ucl_parser_get_error(parser)) {
+	    fprintf(stderr, "Error occured: %s\n", ucl_parser_get_error(parser));
+	    ret = 1;
+	    goto end;
+	}
+
+	root_obj = ucl_parser_get_object(parser);
+	if (ucl_parser_get_error (parser)) {
+	    fprintf(stderr, "Error: Parse Error occured: %s\n",
+		ucl_parser_get_error(parser));
+	    ret = 1;
+	    goto end;
+	}
+
+	ret = ucl_object_delete_key(root_obj, argv[0]);
+	get_mode(dot);
+	break;
     }
 
 end:
     if (parser != NULL) {
 	ucl_parser_free(parser);
     }
+    if (setparser != NULL) {
+	ucl_parser_free(parser);
+    }
     if (root_obj != NULL) {
+	ucl_object_unref(root_obj);
+    }
+    if (set_obj != NULL) {
 	ucl_object_unref(root_obj);
     }
 
@@ -225,9 +313,9 @@ usage()
 {
     fprintf(stderr, "%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n"
 "%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n"
-"%s\n%s\n%s\n%s\n%s\n",
-"Usage: uclcmd [-cdjkruvy] [-f filename] --get variable",
-"       uclcmd [-cdjkruvy] [-f filename] --set variable UCL",
+"%s\n%s\n%s\n%s\n%s\n%s\n%s\n",
+"Usage: uclcmd [-cdjkmqruvy] [-f filename] --get variable",
+"       uclcmd [-cdjkmqruvy] [-f filename] --set variable UCL",
 "",
 "OPTIONS:",
 "       -c --cjson	output compacted JSON",
@@ -235,9 +323,11 @@ usage()
 "       -f --file      	path to a file to read or write",
 "       -j --json	output pretty JSON",
 "       -k --keys      	show key=value rather than just the value",
-"       -r --raw       	do not enclose strings in quotes",
+"	-m --merge	merge the provided UCL into the indicated key",
+"       -q --noquote   	do not enclose strings in quotes",
+"	-r --remove	delete the indicated key",
 "       -g --get       	read a variable",
-"       -s --set       	write a block of UCL ",
+"       -s --set       	write a block of UCL",
 "       -u --ucl     	output universal config language",
 "       -v --shellvars	keys are output with underscores instead of dots",
 "       -y --yaml     	output YAML",
