@@ -41,7 +41,8 @@
  *
  */
 
-static int show_keys = 0, show_raw = 0, mode = 0, debug = 0;
+static int show_keys = 0, show_raw = 0, nonewline = 0, mode = 0, debug = 0;
+static bool firstline = true;
 static int output_type = 254;
 static ucl_object_t *root_obj = NULL;
 static char *dot = ".";
@@ -91,8 +92,10 @@ main(int argc, char *argv[])
 	    UCL_EMIT_JSON },
 	{ "keys",       no_argument,            &show_keys, 	1 },
 	{ "merge",    	no_argument,            &mode,  	2 },
+	{ "mix",    	no_argument,            &mode,  	3 },
+	{ "nonewline",  no_argument,            &nonewline,  	1 },
 	{ "noquote",    no_argument,            &show_raw,  	1 },
-	{ "remove",     no_argument,            &mode,      	3 },
+	{ "remove",     no_argument,            &mode,      	4 },
 	{ "set",        no_argument,            &mode,      	1 },
 	{ "shellvars",  no_argument,            NULL,      	'v' },
 	{ "ucl",        no_argument,            &output_type,
@@ -101,7 +104,7 @@ main(int argc, char *argv[])
 	{ NULL,         0,                      NULL,       	0 }
     };
     
-    while ((ch = getopt_long(argc, argv, "cdf:gjkmqrsuvy", longopts, NULL)) != -1) {
+    while ((ch = getopt_long(argc, argv, "cdf:gijkmnqrsuvy", longopts, NULL)) != -1) {
 	switch (ch) {
 	case 'c':
 	    output_type = UCL_EMIT_JSON_COMPACT;
@@ -123,6 +126,9 @@ main(int argc, char *argv[])
 	    }
 	    filename = optarg;
 	    break;
+	case 'i':
+	    mode = 3;
+	    break;
 	case 'j':
 	    output_type = UCL_EMIT_JSON;
 	    break;
@@ -131,6 +137,9 @@ main(int argc, char *argv[])
 	    break;
 	case 'k':
 	    show_keys = 1;
+	    break;
+	case 'n':
+	    nonewline = 1;
 	    break;
 	case 'm':
 	    mode = 2;
@@ -243,13 +252,8 @@ main(int argc, char *argv[])
 		ret = 1;
 		goto end;
 	    }
-	    if (dst_obj->type == UCL_ARRAY) {
-		sub_obj = __DECONST(ucl_object_t *,
-		    ucl_lookup_path(root_obj, dst_key));
-	    } else {
-		sub_obj = __DECONST(ucl_object_t *,
-		    ucl_object_find_key(dst_obj, dst_frag));
-	    }
+	    sub_obj = __DECONST(ucl_object_t *,
+		ucl_object_find_key(dst_obj, dst_frag));
 	}
 	if (sub_obj == NULL) {
 	    sub_obj = dst_obj;
@@ -300,16 +304,8 @@ main(int argc, char *argv[])
 		dst_prefix);
 	}
 
-	/* Add it to the object here */
-	if (dst_obj->type == UCL_ARRAY) {
-	    ucl_object_t *trash = ucl_array_delete(dst_obj, sub_obj);
-	    ucl_object_unref(trash);
-	    success = ucl_array_append(dst_obj, set_obj);
-	    success = true;
-	} else {
-	    success = ucl_object_replace_key(dst_obj, set_obj,
-		dst_frag, 0, false);
-	}
+	/* Replace it in the object here */
+	success = ucl_object_replace_key(dst_obj, set_obj, dst_frag, 0, false);
 	if (success) {
 	    get_mode(dot);
 	} else {
@@ -320,14 +316,14 @@ main(int argc, char *argv[])
     case 2: /* merge */
 	/* Parse the original UCL */
 	if (ucl_parser_get_error(parser)) {
-	    fprintf(stderr, "Error S1 occured: %s\n",
+	    fprintf(stderr, "Error M1 occured: %s\n",
 		ucl_parser_get_error(parser));
 	    ret = 1;
 	    goto end;
 	}
 	root_obj = ucl_parser_get_object(parser);
 	if (ucl_parser_get_error (parser)) {
-	    fprintf(stderr, "Error: S2 Parse Error occured: %s\n",
+	    fprintf(stderr, "Error: M2 Parse Error occured: %s\n",
 		ucl_parser_get_error(parser));
 	    ret = 1;
 	    goto end;
@@ -357,11 +353,7 @@ main(int argc, char *argv[])
 	    sub_obj = __DECONST(ucl_object_t *,
 		ucl_object_find_key(dst_obj, dst_frag));
 	}
-	if (sub_obj == NULL) {
-	    /* Key not found because it is an array index */
-	    sub_obj = __DECONST(ucl_object_t *,
-		ucl_lookup_path(root_obj, dst_key));
-	}
+
 	if (sub_obj == NULL) {
 	    sub_obj = dst_obj;
 	}
@@ -374,13 +366,24 @@ main(int argc, char *argv[])
 	    } else {
 		/* Destination is an Object or Array */
 		success = ucl_parser_add_string(setparser, argv[1], 0);
-		if (ucl_parser_get_error(setparser)) {
-		    fprintf(stderr, "Error S3 occured: %s\n",
-			ucl_parser_get_error(setparser));
-		    ret = 1;
-		    goto end;
+		if (success == false) {
+		    /* There must be a better way to detect a string */
+		    if (setparser != NULL) {
+			ucl_parser_free(setparser);
+		    }
+		    setparser = ucl_parser_new(UCL_PARSER_KEY_LOWERCASE);
+		    success = true;
+		    set_obj = ucl_object_fromstring_common(argv[1], 0,
+			UCL_STRING_PARSE);		    
+		} else {
+		    if (ucl_parser_get_error(setparser)) {
+			fprintf(stderr, "Error M3 occured: %s\n",
+			    ucl_parser_get_error(setparser));
+			ret = 1;
+			goto end;
+		    }
+		    set_obj = ucl_parser_get_object(setparser);
 		}
-		set_obj = ucl_parser_get_object(setparser);
 	    }
 	} else {
 	    /* get UCL to add from stdin */
@@ -392,7 +395,7 @@ main(int argc, char *argv[])
 	    fclose(in);
 
 	    if (ucl_parser_get_error(setparser)) {
-		fprintf(stderr, "Error S4 occured: %s\n",
+		fprintf(stderr, "Error M4 occured: %s\n",
 		    ucl_parser_get_error(setparser));
 		ret = 1;
 		goto end;
@@ -401,7 +404,7 @@ main(int argc, char *argv[])
 	}
 
 	if (ucl_parser_get_error(setparser)) {
-	    fprintf(stderr, "Error: S5 Parse Error occured: %s\n",
+	    fprintf(stderr, "Error: M5 Parse Error occured: %s\n",
 		ucl_parser_get_error(setparser));
 	    ret = 1;
 	    goto end;
@@ -412,21 +415,126 @@ main(int argc, char *argv[])
 	}
 
 	/* Add it to the object here */
-	if (sub_obj->type == UCL_ARRAY) {
-	    success = ucl_array_append(sub_obj, set_obj);
-	    success = true;
-	} else {
-	    success = ucl_object_insert_key_merged(dst_obj, set_obj,
-		dst_frag, 0, false);
-	}
+	success = ucl_object_insert_key_merged(dst_obj, set_obj, dst_frag,
+	    0, false);
 	if (success) {
 	    get_mode(dot);
 	} else {
-	    fprintf(stderr, "Error: Failed to apply the set operation.\n");    
+	    fprintf(stderr, "Error: Failed to apply the merge operation.\n");    
 	    ret = 1;
 	}
 	break;
-    case 3: /* remove */
+    case 3: /* Mix */
+	/* Parse the original UCL */
+	if (ucl_parser_get_error(parser)) {
+	    fprintf(stderr, "Error M1 occured: %s\n",
+		ucl_parser_get_error(parser));
+	    ret = 1;
+	    goto end;
+	}
+	root_obj = ucl_parser_get_object(parser);
+	if (ucl_parser_get_error (parser)) {
+	    fprintf(stderr, "Error: M2 Parse Error occured: %s\n",
+		ucl_parser_get_error(parser));
+	    ret = 1;
+	    goto end;
+	}
+
+	setparser = ucl_parser_new(UCL_PARSER_KEY_LOWERCASE);
+	/* Lookup the destination to write to */
+	if (debug > 0) {
+	    fprintf(stderr, "selecting key: %s\n", dst_key);
+	    fprintf(stderr, "selected sub-key: %s\n", dst_frag);
+	}
+	if (dst_frag == NULL || strlen(dst_frag) == 0) {
+	    fprintf(stderr, "dst_frag was blank\n");
+	    dst_frag = dst_key;
+	    dst_obj = root_obj;
+	    sub_obj = __DECONST(ucl_object_t *,
+		ucl_object_find_key(dst_obj, dst_frag));
+	} else {
+	    dst_frag[0] = '\0';
+	    dst_frag++;
+	    dst_obj = __DECONST(ucl_object_t *,
+		ucl_lookup_path(root_obj, dst_prefix));
+	    if (dst_obj == NULL) {
+		ret = 1;
+		goto end;
+	    }
+	    sub_obj = __DECONST(ucl_object_t *,
+		ucl_object_find_key(dst_obj, dst_frag));
+	}
+
+	if (sub_obj == NULL) {
+	    sub_obj = dst_obj;
+	}
+
+	if (argc > 1) {
+	    if (sub_obj->type != UCL_OBJECT && sub_obj->type != UCL_ARRAY) {
+		/* Destination is a string, number, etc */
+		set_obj = ucl_object_fromstring_common(argv[1], 0,
+		    UCL_STRING_PARSE);
+	    } else {
+		/* Destination is an Object or Array */
+		success = ucl_parser_add_string(setparser, argv[1], 0);
+		if (success == false) {
+		    /* There must be a better way to detect a string */
+		    if (setparser != NULL) {
+			ucl_parser_free(setparser);
+		    }
+		    setparser = ucl_parser_new(UCL_PARSER_KEY_LOWERCASE);
+		    success = true;
+		    set_obj = ucl_object_fromstring_common(argv[1], 0,
+			UCL_STRING_PARSE);		    
+		} else {
+		    if (ucl_parser_get_error(setparser)) {
+			fprintf(stderr, "Error M3 occured: %s\n",
+			    ucl_parser_get_error(setparser));
+			ret = 1;
+			goto end;
+		    }
+		    set_obj = ucl_parser_get_object(setparser);
+		}
+	    }
+	} else {
+	    /* get UCL to add from stdin */
+	    in = stdin;
+	    while (!feof(in) && r < (int)sizeof(inbuf)) {
+		r += fread(inbuf + r, 1, sizeof(inbuf) - r, in);
+	    }
+	    ucl_parser_add_chunk(setparser, inbuf, r);
+	    fclose(in);
+
+	    if (ucl_parser_get_error(setparser)) {
+		fprintf(stderr, "Error M4 occured: %s\n",
+		    ucl_parser_get_error(setparser));
+		ret = 1;
+		goto end;
+	    }
+	    set_obj = ucl_parser_get_object(setparser);
+	}
+
+	if (ucl_parser_get_error(setparser)) {
+	    fprintf(stderr, "Error: M5 Parse Error occured: %s\n",
+		ucl_parser_get_error(setparser));
+	    ret = 1;
+	    goto end;
+	}
+	if (debug > 0) {
+	    fprintf(stderr, "Inserting key %s to root: %s\n", dst_frag,
+		dst_prefix);
+	}
+
+	/* Add it to the object here */
+	success = ucl_object_mix_key(dst_obj, set_obj, dst_frag, 0, false);
+	if (success) {
+	    get_mode(dot);
+	} else {
+	    fprintf(stderr, "Error: Failed to apply the merge operation.\n");    
+	    ret = 1;
+	}
+	break;
+    case 4: /* remove */
 	/* Parse the original UCL */
 	if (ucl_parser_get_error(parser)) {
 	    fprintf(stderr, "Error occured: %s\n",
@@ -462,6 +570,9 @@ end:
 	ucl_object_unref(set_obj);
     }
 
+    if (nonewline) {
+	printf("\n");
+    }
     return ret;
 }
 
@@ -470,19 +581,23 @@ usage()
 {
     fprintf(stderr, "%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n"
 "%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n"
-"%s\n%s\n%s\n%s\n%s\n%s\n%s\n",
-"Usage: uclcmd [-cdjkmqruvy] [-f filename] --get variable",
-"       uclcmd [-cdjkmqruvy] [-f filename] --set variable UCL",
+"%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n",
+"Usage: uclcmd [-cdijkmnqruvy] [-f filename] --get variable",
+"       uclcmd [-cdijkmnqruvy] [-f filename] --set variable UCL",
+"       uclcmd [-cdijkmnqruvy] [-f filename] --merge variable UCL",
+"       uclcmd [-cdijkmnqruvy] [-f filename] --mix variable UCL",
 "",
 "OPTIONS:",
 "       -c --cjson	output compacted JSON",
 "       -d --debug     	enable verbose debugging output",
 "       -f --file      	path to a file to read or write",
+"       -i --mix	merge-and-replace provided UCL into the indicated key",
 "       -j --json	output pretty JSON",
 "       -k --keys      	show key=value rather than just the value",
-"	-m --merge	merge the provided UCL into the indicated key",
+"       -m --merge	merge the provided UCL into the indicated key",
+"       -n --nonewline	separate output with spaces rather than newlines",
 "       -q --noquote   	do not enclose strings in quotes",
-"	-r --remove	delete the indicated key",
+"       -r --remove	delete the indicated key",
 "       -g --get       	read a variable",
 "       -s --set       	write a block of UCL",
 "       -u --ucl     	output universal config language",
@@ -804,13 +919,22 @@ void
 output_key(const ucl_object_t *obj, char *nodepath, const char *inkey)
 {
     char *key = strdup(inkey);
+    
     replace_sep(nodepath, ".", sepchar);
     replace_sep(key, ".", sepchar);
+    if (firstline == false) {
+	printf(" ");
+    }
     if (obj == NULL) {
 	if (show_keys == 1) {
 	    printf("%s%s=", nodepath, key);
 	}
-	printf("null\n");
+	printf("null");
+	if (nonewline) {
+	    firstline = false;
+	} else {
+	    printf("\n");
+	}
 	return;
     }
     switch (obj->type) {
@@ -821,7 +945,7 @@ output_key(const ucl_object_t *obj, char *nodepath, const char *inkey)
 	}
 	if (show_keys == 1)
 	    printf("%s%s=", nodepath, key);
-	printf("{object}\n");
+	printf("{object}");
 	break;
     case UCL_ARRAY:
 	if (debug >= 3) {
@@ -830,7 +954,7 @@ output_key(const ucl_object_t *obj, char *nodepath, const char *inkey)
 	}
 	if (show_keys == 1)
 	    printf("%s%s=", nodepath, key);
-	printf("[array]\n");
+	printf("[array]");
 	break;
     case UCL_INT:
 	if (debug >= 3) {
@@ -839,7 +963,7 @@ output_key(const ucl_object_t *obj, char *nodepath, const char *inkey)
 	}
 	if (show_keys == 1)
 	    printf("%s%s=", nodepath, key);
-	printf("%jd\n", (intmax_t)ucl_object_toint(obj));
+	printf("%jd", (intmax_t)ucl_object_toint(obj));
 	break;
     case UCL_FLOAT:
 	if (debug >= 3) {
@@ -848,7 +972,7 @@ output_key(const ucl_object_t *obj, char *nodepath, const char *inkey)
 	}
 	if (show_keys == 1)
 	    printf("%s%s=", nodepath, key);
-	printf("%f\n", ucl_object_todouble(obj));
+	printf("%f", ucl_object_todouble(obj));
 	break;
     case UCL_STRING:
 	if (debug >= 3) {
@@ -858,9 +982,9 @@ output_key(const ucl_object_t *obj, char *nodepath, const char *inkey)
 	if (show_keys == 1)
 	    printf("%s%s=", nodepath, key);
 	if (show_raw == 1)
-	    printf("%s\n", ucl_object_tostring(obj));
+	    printf("%s", ucl_object_tostring(obj));
 	else
-	    printf("\"%s\"\n", ucl_object_tostring(obj));
+	    printf("\"%s\"", ucl_object_tostring(obj));
 	break;
     case UCL_BOOLEAN:
 	if (debug >= 3) {
@@ -870,7 +994,7 @@ output_key(const ucl_object_t *obj, char *nodepath, const char *inkey)
 	}
 	if (show_keys == 1)
 	    printf("%s%s=", nodepath, key);
-	printf("%s\n", ucl_object_tostring_forced(obj));
+	printf("%s", ucl_object_tostring_forced(obj));
 	break;
     case UCL_TIME:
 	if (debug >= 3) {
@@ -879,7 +1003,7 @@ output_key(const ucl_object_t *obj, char *nodepath, const char *inkey)
 	}
 	if (show_keys == 1)
 	    printf("%s%s=", nodepath, key);
-	printf("%f\n", ucl_object_todouble(obj));
+	printf("%f", ucl_object_todouble(obj));
 	break;
     case UCL_USERDATA:
 	if (debug >= 3) {
@@ -888,7 +1012,7 @@ output_key(const ucl_object_t *obj, char *nodepath, const char *inkey)
 	}
 	if (show_keys == 1)
 	    printf("%s%s=", nodepath, key);
-	printf("{userdata}\n");
+	printf("{userdata}");
 	break;
     default:
 	if (debug >= 3) {
@@ -897,6 +1021,11 @@ output_key(const ucl_object_t *obj, char *nodepath, const char *inkey)
 		"value=null\n", obj->key, obj->len);
 	}
 	break;
+    }
+    if (nonewline) {
+	firstline = false;
+    } else {
+	printf("\n");
     }
 }
 
