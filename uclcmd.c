@@ -520,40 +520,41 @@ end:
 void
 usage()
 {
-    fprintf(stderr, "%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n"
-"%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n"
-"%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n",
-"Usage: uclcmd [-cdijkmnqruvy] [-f filename] --get variable",
-"       uclcmd [-cdijkmnqruvy] [-f filename] --set variable UCL",
-"       uclcmd [-cdijkmnqruvy] [-f filename] --merge variable UCL",
-"       uclcmd [-cdijkmnqruvy] [-f filename] --mix variable UCL",
-"",
-"OPTIONS:",
-"       -c --cjson      output compacted JSON",
-"       -d --debug      enable verbose debugging output",
-"       -f --file       path to a file to read or write",
-"       -i --mix        merge-and-replace provided UCL into the indicated key",
-"       -j --json       output pretty JSON",
-"       -k --keys       show key=value rather than just the value",
-"       -m --merge      merge the provided UCL into the indicated key",
-"       -n --nonewline  separate output with spaces rather than newlines",
-"       -q --noquote    do not enclose strings in quotes",
-"       -r --remove     delete the indicated key",
-"       -g --get        read a variable",
-"       -s --set        write a block of UCL",
-"       -u --ucl        output universal config language",
-"       -v --shellvars  keys are output with underscores instead of dots",
-"       -y --yaml       output YAML",
-"       variable        The key of the variable to read, in object notation",
-"       UCL             A block of UCL to be written to the specified variable",
-"",
-"EXAMPLES:",
-"       uclcmd --file vmconfig --get .name",
-"           \"value\"",
-"",
-"       uclcmd --file vmconfig --keys --raw --get .array.1.name",
-"           name=value",
-"");
+    fprintf(stderr, "%s\n",
+"Usage: uclcmd [-cdijkmnqruvy] [-f filename] --get variable\n"
+"       uclcmd [-cdijkmnqruvy] [-f filename] --set variable UCL\n"
+"       uclcmd [-cdijkmnqruvy] [-f filename] --merge variable UCL\n"
+"       uclcmd [-cdijkmnqruvy] [-f filename] --mix variable UCL\n"
+"\n"
+"OPTIONS:\n"
+"       -c --cjson      output compacted JSON\n"
+"       -d --debug      enable verbose debugging output\n"
+"       -f --file       path to a file to read or write\n"
+"       -i --mix        merge-and-replace provided UCL into the indicated key\n"
+"       -j --json       output pretty JSON\n"
+"       -k --keys       show key=value rather than just the value\n"
+"       -m --merge      merge the provided UCL into the indicated key\n"
+"       -n --nonewline  separate output with spaces rather than newlines\n"
+"       -q --noquote    do not enclose strings in quotes\n"
+"       -r --remove     delete the indicated key\n"
+"       -g --get        read a variable\n"
+"       -s --set        write a block of UCL\n"
+"       -u --ucl        output universal config language\n"
+"       -v --shellvars  keys are output with underscores instead of dots\n"
+"       -y --yaml       output YAML\n"
+"       variable        The key of the variable to read, in object notation\n"
+"       UCL             A block of UCL to be written to the specified variable\n"
+"\n"
+"EXAMPLES:\n"
+"       uclcmd --file vmconfig --get .name\n"
+"           \"value\"\n"
+"\n"
+"       uclcmd --file vmconfig --keys --noquotes --get array.1.name\n"
+"           array.1.name=value\n"
+"\n"
+"       uclcmd --file vmconfig --keys --shellvars --get array.1.name\n"
+"           array_1_name=\"value\"\n"
+"\n");
     exit(1);
 }
 
