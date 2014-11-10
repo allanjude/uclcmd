@@ -967,14 +967,18 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
 	break;
     case UCL_EMIT_CONFIG: /* UCL */
 	result = ucl_object_emit(obj, output_type);
-	fprintf(stderr, "WARN: UCL output cannot be 'nonewline'd\n");
+	if (nonewline) {
+	    fprintf(stderr, "WARN: UCL output cannot be 'nonewline'd\n");
+	}
 	printf("%s\n", result);
 	free(result);
 	break;
     case UCL_EMIT_JSON: /* JSON */
 	result = ucl_object_emit(obj, output_type);
-	fprintf(stderr,
-	    "WARN: non-compact JSON output cannot be 'nonewline'd\n");
+	if (nonewline) {
+	    fprintf(stderr,
+		"WARN: non-compact JSON output cannot be 'nonewline'd\n");
+	}
 	printf("%s\n", result);
 	free(result);
 	break;
@@ -985,7 +989,9 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
 	break;
     case UCL_EMIT_YAML: /* YAML */
 	result = ucl_object_emit(obj, output_type);
-	fprintf(stderr, "WARN: YAML output cannot be 'nonewline'd\n");
+	if (nonewline) {
+	    fprintf(stderr, "WARN: YAML output cannot be 'nonewline'd\n");
+	}
 	printf("%s\n", result);
 	free(result);
 	break;
