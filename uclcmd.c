@@ -646,62 +646,86 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
     }
     if (strcmp(command_str, "length") == 0) {
 	/* Return the number of items in an array */
+	if (firstline == false) {
+	    printf(" ");
+	}
 	if (obj == NULL) {
 	    if (show_keys == 1)
 		printf("(null)=");
-	    printf("0\n");
+	    printf("0");
 	} else {
 	    if (show_keys == 1)
 		printf("%s%s%s=", nodepath, sepchar, obj->key);
-	    printf("%u\n", obj->len);
+	    printf("%u", obj->len);
+	}
+	if (nonewline) {
+	    firstline = false;
+	} else {
+	    printf("\n");
 	}
     } else if (strcmp(command_str, "type") == 0) {
 	/* Return the type of the current object */
+	if (firstline == false) {
+	    printf(" ");
+	}
 	if (obj == NULL) {
 	    if (show_keys == 1)
 		printf("(null)=");
-	    printf("null\n");
+	    printf("null");
 	} else {
 	    if (show_keys == 1)
 		printf("%s%s%s=", nodepath, sepchar, obj->key);
 	    switch(obj->type) {
 	    case UCL_OBJECT:
-		printf("object\n");
+		printf("object");
 		break;
 	    case UCL_ARRAY:
-		printf("array\n");
+		printf("array");
 		break;
 	    case UCL_INT:
-		printf("int\n");
+		printf("int");
 		break;
 	    case UCL_FLOAT:
-		printf("float\n");
+		printf("float");
 		break;
 	    case UCL_STRING:
-		printf("string\n");
+		printf("string");
 		break;
 	    case UCL_BOOLEAN:
-		printf("boolean\n");
+		printf("boolean");
 		break;
 	    case UCL_TIME:
-		printf("time\n");
+		printf("time");
 		break;
 	    case UCL_USERDATA:
-		printf("userdata\n");
+		printf("userdata");
 		break;
 	    case UCL_NULL:
-		printf("null\n");
+		printf("null");
 		break;
 	    default:
-		printf("unknown\n");
+		printf("unknown");
 		break;
 	    }
+	}
+	if (nonewline) {
+	    firstline = false;
+	} else {
+	    printf("\n");
 	}
     } else if (strcmp(command_str, "keys") == 0) {
 	if (obj != NULL) {
 	    /* Return the keys of the current object */
 	    while ((cur = ucl_iterate_object(obj, &it, true))) {
-		printf("%s\n", ucl_object_key(cur));
+		if (firstline == false) {
+		    printf(" ");
+		}
+		printf("%s", ucl_object_key(cur));
+		if (nonewline) {
+		    firstline = false;
+		} else {
+		    printf("\n");
+		}
 		loopcount++;
 	    }
 	}
@@ -812,7 +836,7 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 	}
     } else {
 	/* Not a valid command */
-	fprintf(stderr, "Error: invalid command %s\n\n", command_str);
+	fprintf(stderr, "Error: invalid command %s\n", command_str);
 	exit(1);
     }
     command_count++;
@@ -955,13 +979,7 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
 
     replace_sep(nodepath, ".", sepchar);
     replace_sep(key, ".", sepchar);
-    if (firstline == false) {
-	printf(" ");
-    }
-    if (show_keys == 1) {
-	printf("%s%s=", nodepath, key);
-    }
-
+    
     switch (output_type) {
     case 254: /* Text */
 	output_key(obj, nodepath, key);
@@ -971,8 +989,15 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
 	if (nonewline) {
 	    fprintf(stderr, "WARN: UCL output cannot be 'nonewline'd\n");
 	}
+	if (show_keys == 1)
+	    printf("%s%s=", nodepath, key);
 	printf("%s", result);
 	free(result);
+	if (nonewline) {
+	    firstline = false;
+	} else {
+	    printf("\n");
+	}
 	break;
     case UCL_EMIT_JSON: /* JSON */
 	result = ucl_object_emit(obj, output_type);
@@ -980,32 +1005,47 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
 	    fprintf(stderr,
 		"WARN: non-compact JSON output cannot be 'nonewline'd\n");
 	}
+	if (show_keys == 1)
+	    printf("%s%s=", nodepath, key);
 	printf("%s", result);
 	free(result);
+	if (nonewline) {
+	    firstline = false;
+	} else {
+	    printf("\n");
+	}
 	break;
     case UCL_EMIT_JSON_COMPACT: /* Compact JSON */
 	result = ucl_object_emit(obj, output_type);
+	if (show_keys == 1)
+	    printf("%s%s=", nodepath, key);
 	printf("%s", result);
 	free(result);
+	if (nonewline) {
+	    firstline = false;
+	} else {
+	    printf("\n");
+	}
 	break;
     case UCL_EMIT_YAML: /* YAML */
 	result = ucl_object_emit(obj, output_type);
 	if (nonewline) {
 	    fprintf(stderr, "WARN: YAML output cannot be 'nonewline'd\n");
 	}
+	if (show_keys == 1)
+	    printf("%s%s=", nodepath, key);
 	printf("%s", result);
 	free(result);
+	if (nonewline) {
+	    firstline = false;
+	} else {
+	    printf("\n");
+	}
 	break;
     default:
 	fprintf(stderr, "Error: Invalid output mode: %i\n",
 	    output_type);
 	break;
-    }
-
-    if (nonewline) {
-	firstline = false;
-    } else {
-	printf("\n");
     }
 
     free(key);
