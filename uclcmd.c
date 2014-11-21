@@ -655,7 +655,7 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 	    printf("0");
 	} else {
 	    if (show_keys == 1)
-		printf("%s%s%s=", nodepath, sepchar, obj->key);
+		printf("%s", nodepath);
 	    printf("%u", obj->len);
 	}
 	if (nonewline) {
@@ -674,7 +674,7 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 	    printf("null");
 	} else {
 	    if (show_keys == 1)
-		printf("%s%s%s=", nodepath, sepchar, obj->key);
+		printf("%s=", nodepath);
 	    switch(obj->type) {
 	    case UCL_OBJECT:
 		printf("object");
