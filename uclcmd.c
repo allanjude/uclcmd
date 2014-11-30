@@ -68,6 +68,7 @@ void output_key(const ucl_object_t *obj, char *nodepath, const char *inkey);
 void output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey);
 void replace_sep(char *key, char *oldsep, char *newsep);
 void cleanup();
+char* type_as_string (const ucl_object_t *obj);
 void ucl_obj_dump (const ucl_object_t *obj, unsigned int shift);
 
 /*
@@ -405,7 +406,8 @@ get_parent(char *selected_node)
     char *dst_frag = strrchr(dst_prefix, '.');
     ucl_object_t *parent_obj = NULL;
 
-    if (dst_frag == NULL || strlen(dst_frag) == 0) {
+    if (dst_frag == NULL || strlen(dst_frag) == 0 ||
+	    strcmp(dst_key, ".") == 0) {
 	dst_frag = dst_key;
 	parent_obj = root_obj;
     } else {
@@ -438,17 +440,10 @@ get_object(char *selected_node)
     ucl_object_t *parent_obj = NULL;
     ucl_object_t *selected_obj = NULL;
 
-    if (dst_frag == NULL || strlen(dst_frag) == 0) {
+    if (dst_frag == NULL || strlen(dst_frag) == 0 ||
+	    strcmp(dst_key, ".") == 0) {
 	dst_frag = dst_key;
 	parent_obj = root_obj;
-	if (parent_obj->type == UCL_ARRAY) {
-	    /* XXX: Error detection in strtoul needed here */
-	    selected_obj = __DECONST(ucl_object_t *,
-		ucl_array_find_index(parent_obj, strtoul(dst_frag, NULL, 10)));
-	} else {
-	    selected_obj = __DECONST(ucl_object_t *,
-		ucl_object_find_key(parent_obj, dst_frag));
-	}
     } else {
 	/*
 	 * dst_frag is a pointer to the last period in dst_prefix, write a
@@ -840,6 +835,16 @@ set_mode(char *destination_node, char *data)
     }
 
     if (debug > 0) {
+	char *rt = NULL, *dt = NULL, *st = NULL;
+	rt = type_as_string(dst_obj);
+	dt = type_as_string(sub_obj);
+	st = type_as_string(set_obj);
+	fprintf(stderr, "root type: %s, destination type: %s, new type: %s\n",
+	    rt, dt, st);
+	if (rt != NULL) free(rt);
+	if (dt != NULL) free(dt);
+	if (st != NULL) free(st);
+
 	fprintf(stderr, "Inserting key %s to root: %s\n",
 	    ucl_object_key(sub_obj), ucl_object_key(dst_obj));
     }
@@ -849,6 +854,9 @@ set_mode(char *destination_node, char *data)
 	char *dst_frag = strrchr(destination_node, '.');
 
 	dst_frag++;
+	if (debug > 0) {
+	    fprintf(stderr, "Replacing array index %s\n", dst_frag);
+	}
 	old_obj = ucl_array_replace_index(dst_obj, set_obj, strtoul(dst_frag,
 	    NULL, 0));
 	success = false;
@@ -857,6 +865,9 @@ set_mode(char *destination_node, char *data)
 	    success = true;
 	}
     } else {
+	if (debug > 0) {
+	    fprintf(stderr, "Replacing key %s\n", ucl_object_key(sub_obj));
+	}
 	success = ucl_object_replace_key(dst_obj, set_obj,
 	    ucl_object_key(sub_obj), 0, true);
 	set_obj = NULL;
@@ -896,20 +907,45 @@ merge_mode(char *destination_node, char *data)
     }
 
     if (debug > 0) {
+	char *rt = NULL, *dt = NULL, *st = NULL;
+	rt = type_as_string(dst_obj);
+	dt = type_as_string(sub_obj);
+	st = type_as_string(set_obj);
+	fprintf(stderr, "root type: %s, destination type: %s, new type: %s\n",
+	    rt, dt, st);
+	if (rt != NULL) free(rt);
+	if (dt != NULL) free(dt);
+	if (st != NULL) free(st);
+
 	fprintf(stderr, "Merging key %s to root: %s\n",
 	    ucl_object_key(sub_obj), ucl_object_key(dst_obj));
     }
 
     /* Add it to the object here */
     if (sub_obj->type == UCL_ARRAY && set_obj->type == UCL_ARRAY) {
+	if (debug > 0) {
+	    fprintf(stderr, "Merging array of size %u with array of size %u\n",
+		sub_obj->len, set_obj->len);
+	}
 	success = ucl_array_merge(sub_obj, set_obj, false);
     } else if (sub_obj->type == UCL_OBJECT && set_obj->type == UCL_OBJECT) {
+	if (debug > 0) {
+	    fprintf(stderr, "Merging object %s with object %s\n",
+		ucl_object_key(sub_obj), ucl_object_key(set_obj));
+	}
 	success = ucl_object_merge(sub_obj, set_obj, false);
     } else if (sub_obj->type == UCL_ARRAY) {
+	if (debug > 0) {
+	    fprintf(stderr, "Appending object to array of size %u\n",
+		sub_obj->len);
+	}
 	success = ucl_array_append(sub_obj, ucl_object_ref(set_obj));
     } else if (sub_obj->type != UCL_OBJECT && sub_obj->type != UCL_ARRAY &&
 	    set_obj->type != UCL_OBJECT && set_obj->type != UCL_ARRAY) {
 	/* Create an explicit array */
+	if (debug > 0) {
+	    fprintf(stderr, "Creating an array and appended the new item\n");
+	}
 	old_obj = ucl_object_typed_new(UCL_ARRAY);
 	/*
 	 * Reference and Append the original scalar
@@ -926,6 +962,10 @@ merge_mode(char *destination_node, char *data)
 	    && set_obj->type != UCL_ARRAY) {
 	printf("Not implemented yet\n");
     } else {
+	if (debug > 0) {
+	    fprintf(stderr, "Merging object into key %s\n",
+		ucl_object_key(sub_obj));
+	}
 	success = ucl_object_insert_key_merged(dst_obj, set_obj,
 	    ucl_object_key(sub_obj), 0, true);
     }
@@ -1157,6 +1197,44 @@ cleanup()
     if (set_obj != NULL) {
 	ucl_object_unref(set_obj);
     }
+}
+
+char *
+type_as_string (const ucl_object_t *obj)
+{
+    char *ret = NULL;
+
+    if (obj == NULL) {
+	return NULL;
+    } else if (obj->type == UCL_OBJECT) {
+	asprintf(&ret, "UCL_OBJECT");
+    }
+    else if (obj->type == UCL_ARRAY) {
+	asprintf(&ret, "UCL_ARRAY");
+    }
+    else if (obj->type == UCL_INT) {
+	asprintf(&ret, "UCL_INT");
+    }
+    else if (obj->type == UCL_FLOAT) {
+	asprintf(&ret, "UCL_FLOAT");
+    }
+    else if (obj->type == UCL_STRING) {
+	asprintf(&ret, "UCL_STRING");
+    }
+    else if (obj->type == UCL_BOOLEAN) {
+	asprintf(&ret, "UCL_BOOLEAN");
+    }
+    else if (obj->type == UCL_TIME) {
+	asprintf(&ret, "UCL_TIME");
+    }
+    else if (obj->type == UCL_USERDATA) {
+	asprintf(&ret, "UCL_USERDATA");
+    }
+    else if (obj->type == UCL_NULL) {
+	asprintf(&ret, "UCL_NULL");
+    }
+
+    return ret;
 }
 
 void
