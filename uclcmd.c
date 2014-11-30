@@ -402,12 +402,17 @@ ucl_object_t*
 get_parent(char *selected_node)
 {
     char *dst_key = selected_node;
-    char *dst_prefix = strdup(dst_key);
-    char *dst_frag = strrchr(dst_prefix, '.');
+    char *dst_prefix = NULL;
+    char *dst_frag = NULL;
     ucl_object_t *parent_obj = NULL;
 
-    if (dst_frag == NULL || strlen(dst_frag) == 0 ||
-	    strcmp(dst_key, ".") == 0) {
+    if (strncmp(dst_key, ".", 1) == 0) {
+	dst_key++;
+    }
+    dst_prefix = strdup(dst_key);
+    dst_frag = strrchr(dst_prefix, '.');
+
+    if (dst_frag == NULL || strlen(dst_frag) == 0) {
 	dst_frag = dst_key;
 	parent_obj = root_obj;
     } else {
@@ -435,13 +440,18 @@ ucl_object_t*
 get_object(char *selected_node)
 {
     char *dst_key = selected_node;
-    char *dst_prefix = strdup(dst_key);
-    char *dst_frag = strrchr(dst_prefix, '.');
+    char *dst_prefix = NULL;
+    char *dst_frag = NULL;
     ucl_object_t *parent_obj = NULL;
     ucl_object_t *selected_obj = NULL;
 
-    if (dst_frag == NULL || strlen(dst_frag) == 0 ||
-	    strcmp(dst_key, ".") == 0) {
+    if (strncmp(dst_key, ".", 1) == 0) {
+	dst_key++;
+    }
+    dst_prefix = strdup(dst_key);
+    dst_frag = strrchr(dst_prefix, '.');
+
+    if (dst_frag == NULL || strlen(dst_frag) == 0) {
 	dst_frag = dst_key;
 	parent_obj = root_obj;
     } else {
@@ -819,6 +829,10 @@ set_mode(char *destination_node, char *data)
     dst_obj = get_parent(destination_node);
     sub_obj = get_object(destination_node);
 
+    if (sub_obj == NULL) {
+	return false;
+    }
+
     if (data == NULL || strcmp(data, "-") == 0) {
 	/* get UCL to add from stdin */
 	set_obj = parse_input(setparser, stdin);
@@ -853,6 +867,8 @@ set_mode(char *destination_node, char *data)
     if (dst_obj->type == UCL_ARRAY) {
 	char *dst_frag = strrchr(destination_node, '.');
 
+	/* XXX TODO: What if the destination_node only points to an array */
+	/* XXX TODO: What if we want to replace an entire array? */
 	dst_frag++;
 	if (debug > 0) {
 	    fprintf(stderr, "Replacing array index %s\n", dst_frag);
@@ -862,6 +878,7 @@ set_mode(char *destination_node, char *data)
 	success = false;
 	if (old_obj != NULL) {
 	    ucl_object_unref(old_obj);
+	    set_obj = NULL;
 	    success = true;
 	}
     } else {
@@ -890,6 +907,10 @@ merge_mode(char *destination_node, char *data)
     /* Lookup the destination to write to */
     dst_obj = get_parent(destination_node);
     sub_obj = get_object(destination_node);
+
+    if (sub_obj == NULL) {
+	return false;
+    }
 
     if (data == NULL || strcmp(data, "-") == 0) {
 	/* get UCL to add from stdin */
@@ -966,7 +987,7 @@ merge_mode(char *destination_node, char *data)
 	    fprintf(stderr, "Merging object into key %s\n",
 		ucl_object_key(sub_obj));
 	}
-	success = ucl_object_insert_key_merged(dst_obj, set_obj,
+	success = ucl_object_insert_key_merged(dst_obj, ucl_object_ref(set_obj),
 	    ucl_object_key(sub_obj), 0, true);
     }
 
