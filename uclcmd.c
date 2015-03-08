@@ -49,8 +49,8 @@ static ucl_object_t *root_obj = NULL;
 static ucl_object_t *set_obj = NULL;
 struct ucl_parser *parser = NULL;
 struct ucl_parser *setparser = NULL;
-static char *dot = ".";
-static char *sepchar = ".";
+static char *input_sepchar = ".";
+static char *output_sepchar = ".";
 
 
 void usage();
@@ -95,25 +95,26 @@ main(int argc, char *argv[])
 	{ "cjson",	no_argument,            &output_type,
 	    UCL_EMIT_JSON_COMPACT },
 	{ "debug",      optional_argument,      NULL,       	'd' },
+	{ "delimiter",  required_argument,      NULL,       	'e' },
 	{ "file",       required_argument,      NULL,       	'f' },
 	{ "get",        no_argument,            &mode,      	0 },
 	{ "json",       no_argument,            &output_type,
 	    UCL_EMIT_JSON },
 	{ "keys",       no_argument,            &show_keys, 	1 },
 	{ "merge",    	no_argument,            &mode,  	2 },
-	{ "mix",    	no_argument,            &mode,  	3 },
+	{ "input",    	no_argument,            NULL,  		'i' },
 	{ "nonewline",  no_argument,            &nonewline,  	1 },
 	{ "noquote",    no_argument,            &show_raw,  	1 },
 	{ "remove",     no_argument,            &mode,      	4 },
 	{ "set",        no_argument,            &mode,      	1 },
-	{ "shellvars",  no_argument,            NULL,      	'v' },
+	{ "shellvars",  no_argument,            NULL,      	'l' },
 	{ "ucl",        no_argument,            &output_type,
 	    UCL_EMIT_CONFIG },
 	{ "yaml",       no_argument,            &output_type,	UCL_EMIT_YAML },
 	{ NULL,         0,                      NULL,       	0 }
     };
 
-    while ((ch = getopt_long(argc, argv, "cdf:gijkmnqrsuvy", longopts, NULL)) != -1) {
+    while ((ch = getopt_long(argc, argv, "cde:f:gi:jklmnqrsuy", longopts, NULL)) != -1) {
 	switch (ch) {
 	case 'c':
 	    output_type = UCL_EMIT_JSON_COMPACT;
@@ -125,6 +126,10 @@ main(int argc, char *argv[])
 		debug = 1;
 	    }
 	    break;
+	case 'e':
+	    /* XXX: TODO: We only want the first character, malloc problems? */
+	    input_sepchar = optarg;
+	    break;
 	case 'f':
 	    filename = optarg;
 	    if (strcmp(optarg, "-") == 0) {
@@ -135,7 +140,8 @@ main(int argc, char *argv[])
 	    }
 	    break;
 	case 'i':
-	    mode = 3;
+	    printf("Not implemented yet\n");
+	    exit(1);
 	    break;
 	case 'j':
 	    output_type = UCL_EMIT_JSON;
@@ -145,6 +151,9 @@ main(int argc, char *argv[])
 	    break;
 	case 'k':
 	    show_keys = 1;
+	    break;
+	case 'l':
+	    output_sepchar = "_";
 	    break;
 	case 'n':
 	    nonewline = 1;
@@ -163,9 +172,6 @@ main(int argc, char *argv[])
 	    break;
 	case 'u':
 	    output_type = UCL_EMIT_CONFIG;
-	    break;
-	case 'v':
-	    sepchar = "_";
 	    break;
 	case 'y':
 	    output_type = UCL_EMIT_YAML;
@@ -219,7 +225,7 @@ main(int argc, char *argv[])
 	}
 
 	if (success) {
-	    get_mode(dot);
+	    get_mode(input_sepchar);
 	} else {
 	    fprintf(stderr, "Error: Failed to apply the set operation.\n");
 	    ret = 1;
@@ -243,7 +249,7 @@ main(int argc, char *argv[])
 	}
 
 	if (success) {
-	    get_mode(dot);
+	    get_mode(input_sepchar);
 	} else {
 	    fprintf(stderr, "Error: Failed to apply the merge operation.\n");
 	    ret = 1;
@@ -262,7 +268,7 @@ main(int argc, char *argv[])
 	}
 
 	ret = ucl_object_delete_key(root_obj, argv[0]);
-	get_mode(dot);
+	get_mode(input_sepchar);
 
 	break;
     }
@@ -279,26 +285,27 @@ void
 usage()
 {
     fprintf(stderr, "%s\n",
-"Usage: uclcmd [-cdijkmnqruvy] [-f filename] --get variable\n"
-"       uclcmd [-cdijkmnqruvy] [-f filename] --set variable UCL\n"
-"       uclcmd [-cdijkmnqruvy] [-f filename] --merge variable UCL\n"
-"       uclcmd [-cdijkmnqruvy] [-f filename] --mix variable UCL\n"
+"Usage: uclcmd [-cdjklmnqruy] [-f filename] --get variable\n"
+"       uclcmd [-cdjklmnqruy] [-f filename] --set variable UCL\n"
+"       uclcmd [-cdjklmnqruy] [-f filename] [-i filename] --merge variable\n"
+"       uclcmd [-cdjklmnqruy] [-f filename] --remove variable\n"
 "\n"
 "OPTIONS:\n"
 "       -c --cjson      output compacted JSON\n"
 "       -d --debug      enable verbose debugging output\n"
+"       -e --delimiter  character to use as element delimiter (default is .)\n"
 "       -f --file       path to a file to read or write\n"
-"       -i --mix        merge-and-replace provided UCL into the indicated key\n"
+"       -g --get        return the value of the indicated key\n"
+"       -i --input      use indicated file as additional input (for merging)\n"
 "       -j --json       output pretty JSON\n"
 "       -k --keys       show key=value rather than just the value\n"
+"       -l --shellvars  keys are output with underscores as delimiter\n"
 "       -m --merge      merge the provided UCL into the indicated key\n"
 "       -n --nonewline  separate output with spaces rather than newlines\n"
 "       -q --noquote    do not enclose strings in quotes\n"
 "       -r --remove     delete the indicated key\n"
-"       -g --get        read a variable\n"
-"       -s --set        write a block of UCL\n"
+"       -s --set        add (or replace) the indicated key\n"
 "       -u --ucl        output universal config language\n"
-"       -v --shellvars  keys are output with underscores instead of dots\n"
 "       -y --yaml       output YAML\n"
 "       variable        The key of the variable to read, in object notation\n"
 "       UCL             A block of UCL to be written to the specified variable\n"
@@ -406,11 +413,11 @@ get_parent(char *selected_node)
     char *dst_frag = NULL;
     ucl_object_t *parent_obj = NULL;
 
-    if (strncmp(dst_key, ".", 1) == 0) {
+    if (strncmp(dst_key, input_sepchar, 1) == 0) {
 	dst_key++;
     }
     dst_prefix = strdup(dst_key);
-    dst_frag = strrchr(dst_prefix, '.');
+    dst_frag = strrchr(dst_prefix, input_sepchar[0]);
 
     if (dst_frag == NULL || strlen(dst_frag) == 0) {
 	dst_frag = dst_key;
@@ -445,11 +452,11 @@ get_object(char *selected_node)
     ucl_object_t *parent_obj = NULL;
     ucl_object_t *selected_obj = NULL;
 
-    if (strncmp(dst_key, ".", 1) == 0) {
+    if (strncmp(dst_key, input_sepchar, 1) == 0) {
 	dst_key++;
     }
     dst_prefix = strdup(dst_key);
-    dst_frag = strrchr(dst_prefix, '.');
+    dst_frag = strrchr(dst_prefix, input_sepchar[0]);
 
     if (dst_frag == NULL || strlen(dst_frag) == 0) {
 	dst_frag = dst_key;
@@ -509,13 +516,13 @@ get_mode(char *requested_node)
 	    fprintf(stderr, "DEBUG: Using root node\n");
 	}
 	found_object = root_obj;
-    } else if (strcmp(node_name, ".") == 0) {
+    } else if (strcmp(node_name, input_sepchar) == 0) {
 	if (debug > 0) {
 	    fprintf(stderr, "DEBUG: Using root node\n");
 	}
 	found_object = root_obj;
     } else {
-	if (strncmp(node_name, ".", 1) == 0) {
+	if (strncmp(node_name, input_sepchar, 1) == 0) {
 	    /* Removing leading dot */
 	    node_name++;
 	}
@@ -673,10 +680,10 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 		    continue;
 		}
 		if (obj->type == UCL_ARRAY) {
-		    asprintf(&newkey, "%s%i", sepchar, arrindex);
+		    asprintf(&newkey, "%s%i", output_sepchar, arrindex);
 		    arrindex++;
 		} else {
-		    asprintf(&newkey, "%s%s", sepchar, ucl_object_key(cur));
+		    asprintf(&newkey, "%s%s", output_sepchar, ucl_object_key(cur));
 		}
 		output_key(cur, nodepath, newkey);
 		loopcount++;
@@ -716,10 +723,10 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 	    while ((cur = ucl_iterate_object(obj, &it, true))) {
 		char *newkey = NULL;
 		if (obj->type == UCL_ARRAY) {
-		    asprintf(&newkey, "%s%i", sepchar, arrindex);
+		    asprintf(&newkey, "%s%i", output_sepchar, arrindex);
 		    arrindex++;
 		} else {
-		    asprintf(&newkey, "%s%s", sepchar, ucl_object_key(cur));
+		    asprintf(&newkey, "%s%s", output_sepchar, ucl_object_key(cur));
 		}
 		if (cur->next != 0 && cur->type != UCL_ARRAY) {
 		    it2 = NULL;
@@ -741,11 +748,11 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 		while ((cur = ucl_iterate_object(obj, &it, true))) {
 		    char *newnodepath = NULL;
 		    if (obj->type == UCL_ARRAY) {
-			asprintf(&newnodepath, "%s%s%i", nodepath, sepchar,
+			asprintf(&newnodepath, "%s%s%i", nodepath, output_sepchar,
 			    arrindex);
 			arrindex++;
 		    } else {
-			asprintf(&newnodepath, "%s%s%s", nodepath, sepchar,
+			asprintf(&newnodepath, "%s%s%s", nodepath, output_sepchar,
 			    ucl_object_key(cur));
 		    }
 		    if (cur->next != 0 && cur->type != UCL_ARRAY) {
@@ -766,7 +773,7 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 	if (loopcount == 0 && debug > 0) {
 	    fprintf(stderr, "DEBUG: Found 0 objects to each over\n");
 	}
-    } else if (strncmp(command_str, ".", 1) == 0) {
+    } else if (strncmp(command_str, input_sepchar, 1) == 0) {
 	/* User has provided an identifier after the commands */
 	/* Search for selected node */
 	if (debug > 0) {
@@ -784,11 +791,11 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 	    if (next_command != NULL) {
 		char *newnodepath = NULL;
 		if (obj->type == UCL_ARRAY) {
-		    asprintf(&newnodepath, "%s%s%i", nodepath, sepchar,
+		    asprintf(&newnodepath, "%s%s%i", nodepath, output_sepchar,
 			arrindex);
 		    arrindex++;
 		} else {
-		    asprintf(&newnodepath, "%s%s%s", nodepath, sepchar,
+		    asprintf(&newnodepath, "%s%s%s", nodepath, output_sepchar,
 			ucl_object_key(cur));
 		}
 		if (debug > 2) {
@@ -865,7 +872,7 @@ set_mode(char *destination_node, char *data)
 
     /* Replace it in the object here */
     if (dst_obj->type == UCL_ARRAY) {
-	char *dst_frag = strrchr(destination_node, '.');
+	char *dst_frag = strrchr(destination_node, input_sepchar[0]);
 
 	/* XXX TODO: What if the destination_node only points to an array */
 	/* XXX TODO: What if we want to replace an entire array? */
@@ -954,7 +961,7 @@ merge_mode(char *destination_node, char *data)
 	    fprintf(stderr, "Merging object %s with object %s\n",
 		ucl_object_key(sub_obj), ucl_object_key(set_obj));
 	}
-	success = ucl_object_merge(sub_obj, set_obj, false);
+	success = ucl_object_merge(sub_obj, set_obj, false, true);
     } else if (sub_obj->type == UCL_ARRAY) {
 	if (debug > 0) {
 	    fprintf(stderr, "Appending object to array of size %u\n",
@@ -999,8 +1006,8 @@ output_key(const ucl_object_t *obj, char *nodepath, const char *inkey)
 {
     char *key = strdup(inkey);
 
-    replace_sep(nodepath, ".", sepchar);
-    replace_sep(key, ".", sepchar);
+    replace_sep(nodepath, input_sepchar, output_sepchar);
+    replace_sep(key, input_sepchar, output_sepchar);
     if (firstline == false) {
 	printf(" ");
     }
@@ -1116,8 +1123,8 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
     unsigned char *result = NULL;
     char *key = strdup(inkey);
 
-    replace_sep(nodepath, ".", sepchar);
-    replace_sep(key, ".", sepchar);
+    replace_sep(nodepath, input_sepchar, output_sepchar);
+    replace_sep(key, input_sepchar, output_sepchar);
 
     switch (output_type) {
     case 254: /* Text */
