@@ -602,6 +602,8 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 	} else {
 	    printf("\n");
 	}
+    } else if (strcmp(command_str, "dump") == 0) {
+	ucl_obj_dump(obj,2);
     } else if (strcmp(command_str, "type") == 0) {
 	/* Return the type of the current object */
 	if (firstline == false) {
@@ -717,6 +719,53 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 	if (loopcount == 0 && debug > 0) {
 	    fprintf(stderr, "DEBUG: Found 0 objects to each over\n");
 	}
+    } else if (strcmp(command_str, "recurse") == 0) {
+	it = NULL;
+	while ((cur = ucl_iterate_object(obj, &it, true))) {
+	    char *newkey = NULL;
+	    char *newnodepath = NULL;
+	    if (obj->type == UCL_ARRAY) {
+		asprintf(&newkey, "%s%i", output_sepchar, arrindex);
+		arrindex++;
+	    } else {
+		asprintf(&newkey, "%s%s", output_sepchar, ucl_object_key(cur));
+	    }
+	    if (ucl_object_type(cur) == UCL_OBJECT ||
+		    ucl_object_type(cur) == UCL_ARRAY) {
+		it2 = NULL;
+		if (ucl_object_type(cur) == UCL_ARRAY) {
+		    ucl_object_t *arrlen = NULL;
+		    char *tmpkeyname;
+
+		    arrlen = ucl_object_fromint(cur->len);
+		    asprintf(&tmpkeyname, "%s%s%s", newkey, output_sepchar, "_length");
+		    output_chunk(arrlen, nodepath, tmpkeyname);
+		    free(tmpkeyname);
+		}
+		while ((cur2 = ucl_iterate_object(cur, &it2, false))) {
+		    if (nodepath != NULL && strlen(nodepath) > 0) {
+			asprintf(&newnodepath, "%s%s", nodepath, newkey);
+		    } else {
+			if (obj->type == UCL_ARRAY) {
+			    asprintf(&newnodepath, "%i", arrindex);
+			} else {
+			    asprintf(&newnodepath, "%s", ucl_object_key(cur2));
+			}
+		    }
+		    recurse_level = process_get_command(cur2,
+			newnodepath, command_str, remaining_commands,
+			recurse + 1);
+		}
+	    } else {
+		output_chunk(cur, nodepath, newkey);
+	    }
+	    loopcount++;
+	    free(newkey);
+	    free(newnodepath);
+	}
+	if (loopcount == 0 && debug > 0) {
+	    fprintf(stderr, "DEBUG: Found 0 objects to each over\n");
+	}
     } else if (strcmp(command_str, "each") == 0) {
 	if (remaining_commands == NULL) {
 	    it = NULL;
@@ -729,6 +778,7 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 		    asprintf(&newkey, "%s%s", output_sepchar, ucl_object_key(cur));
 		}
 		if (cur->next != 0 && cur->type != UCL_ARRAY) {
+		    /* Implicit array */
 		    it2 = NULL;
 		    while ((cur2 = ucl_iterate_object(cur, &it2, false))) {
 			output_chunk(cur2, nodepath, newkey);
@@ -756,6 +806,7 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 			    ucl_object_key(cur));
 		    }
 		    if (cur->next != 0 && cur->type != UCL_ARRAY) {
+			/* Implicit array */
 			it2 = NULL;
 			while ((cur2 = ucl_iterate_object(cur, &it2, false))) {
 			    recurse_level = process_get_command(cur2,
@@ -774,38 +825,43 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 	    fprintf(stderr, "DEBUG: Found 0 objects to each over\n");
 	}
     } else if (strncmp(command_str, input_sepchar, 1) == 0) {
-	/* User has provided an identifier after the commands */
-	/* Search for selected node */
-	if (debug > 0) {
-	    fprintf(stderr, "DEBUG: Searching for subnode %s\n", command_str);
-	}
-	cur = ucl_lookup_path(obj, command_str);
-	/* If this is the last thing on the stack, output */
-	if (remaining_commands == NULL) {
-	    /* Would also check cur==null here, but that breaks |keys */
-	    output_key(cur, nodepath, command_str);
-	} else {
-	    /* Return the values of the current object */
-	    char *rcmds = strdup(remaining_commands);
-	    char *next_command = strsep(&rcmds, "|");
-	    if (next_command != NULL) {
-		char *newnodepath = NULL;
-		if (obj->type == UCL_ARRAY) {
-		    asprintf(&newnodepath, "%s%s%i", nodepath, output_sepchar,
-			arrindex);
-		    arrindex++;
-		} else {
-		    asprintf(&newnodepath, "%s%s%s", nodepath, output_sepchar,
-			ucl_object_key(cur));
+	/* Separate and loop here */
+	char *reqnodelist = strdup(command_str);
+	char *reqnode = NULL;
+	while ((reqnode = strsep(&reqnodelist, " ")) != NULL) {
+	    /* User has provided an identifier after the commands */
+	    /* Search for selected node */
+	    if (debug > 0) {
+		fprintf(stderr, "DEBUG: Searching for subnode %s\n", reqnode);
+	    }
+	    cur = ucl_lookup_path(obj, reqnode);
+	    /* If this is the last thing on the stack, output */
+	    if (remaining_commands == NULL) {
+		/* Would also check cur==null here, but that breaks |keys */
+		output_key(cur, nodepath, reqnode);
+	    } else {
+		/* Return the values of the current object */
+		char *rcmds = strdup(remaining_commands);
+		char *next_command = strsep(&rcmds, "|");
+		if (next_command != NULL) {
+		    char *newnodepath = NULL;
+		    if (obj->type == UCL_ARRAY) {
+			asprintf(&newnodepath, "%s%s%i", nodepath, output_sepchar,
+			    arrindex);
+			arrindex++;
+		    } else {
+			asprintf(&newnodepath, "%s%s%s", nodepath, output_sepchar,
+			    ucl_object_key(cur));
+		    }
+		    if (debug > 2) {
+			fprintf(stderr, "DEBUG: Calling recurse with %s.%s on %s\n",
+			    newnodepath, next_command,
+			    ucl_object_emit(cur, UCL_EMIT_CONFIG));
+		    }
+		    recurse_level = process_get_command(cur, newnodepath,
+			next_command, rcmds, recurse + 1);
+		    free(newnodepath);
 		}
-		if (debug > 2) {
-		    fprintf(stderr, "DEBUG: Calling recurse with %s.%s on %s\n",
-			newnodepath, next_command,
-			ucl_object_emit(cur, UCL_EMIT_CONFIG));
-		}
-		recurse_level = process_get_command(cur, newnodepath,
-		    next_command, rcmds, recurse + 1);
-		free(newnodepath);
 	    }
 	}
     } else {
@@ -961,7 +1017,10 @@ merge_mode(char *destination_node, char *data)
 	    fprintf(stderr, "Merging object %s with object %s\n",
 		ucl_object_key(sub_obj), ucl_object_key(set_obj));
 	}
-	success = ucl_object_merge(sub_obj, set_obj, false, true);
+	/* not supported:
+	 * success = ucl_object_merge(sub_obj, set_obj, false, true);
+	 */
+	success = ucl_object_merge(sub_obj, set_obj, false);
     } else if (sub_obj->type == UCL_ARRAY) {
 	if (debug > 0) {
 	    fprintf(stderr, "Appending object to array of size %u\n",
@@ -1268,64 +1327,67 @@ type_as_string (const ucl_object_t *obj)
 void
 ucl_obj_dump (const ucl_object_t *obj, unsigned int shift)
 {
-	int num = shift * 4 + 5;
-	char *pre = (char *) malloc (num * sizeof(char));
-	const ucl_object_t *cur, *tmp;
-	ucl_object_iter_t it = NULL, it_obj = NULL;
+    int num = shift * 4 + 5;
+    char *pre = (char *) malloc (num * sizeof(char));
+    const ucl_object_t *cur, *tmp;
+    ucl_object_iter_t it = NULL, it_obj = NULL;
 
-	pre[--num] = 0x00;
-	while (num--)
-		pre[num] = 0x20;
+    pre[--num] = 0x00;
+    while (num--)
+	    pre[num] = 0x20;
 
-	tmp = obj;
+    tmp = obj;
 
-	while ((obj = ucl_iterate_object (tmp, &it, false))) {
-		printf ("%sucl object address: %p\n", pre + 4, obj);
-		if (obj->key != NULL) {
-			printf ("%skey: \"%s\"\n", pre, ucl_object_key (obj));
-		}
-		printf ("%sref: %u\n", pre, obj->ref);
-		printf ("%slen: %u\n", pre, obj->len);
-		printf ("%sprev: %p\n", pre, obj->prev);
-		printf ("%snext: %p\n", pre, obj->next);
-		if (obj->type == UCL_OBJECT) {
-			printf ("%stype: UCL_OBJECT\n", pre);
-			printf ("%svalue: %p\n", pre, obj->value.ov);
-			it_obj = NULL;
-			while ((cur = ucl_iterate_object (obj, &it_obj, true))) {
-				ucl_obj_dump (cur, shift + 2);
-			}
-		}
-		else if (obj->type == UCL_ARRAY) {
-			printf ("%stype: UCL_ARRAY\n", pre);
-			printf ("%svalue: %p\n", pre, obj->value.av);
-			ucl_obj_dump (obj->value.av, shift + 2);
-		}
-		else if (obj->type == UCL_INT) {
-			printf ("%stype: UCL_INT\n", pre);
-			printf ("%svalue: %jd\n", pre, (intmax_t)ucl_object_toint (obj));
-		}
-		else if (obj->type == UCL_FLOAT) {
-			printf ("%stype: UCL_FLOAT\n", pre);
-			printf ("%svalue: %f\n", pre, ucl_object_todouble (obj));
-		}
-		else if (obj->type == UCL_STRING) {
-			printf ("%stype: UCL_STRING\n", pre);
-			printf ("%svalue: \"%s\"\n", pre, ucl_object_tostring (obj));
-		}
-		else if (obj->type == UCL_BOOLEAN) {
-			printf ("%stype: UCL_BOOLEAN\n", pre);
-			printf ("%svalue: %s\n", pre, ucl_object_tostring_forced (obj));
-		}
-		else if (obj->type == UCL_TIME) {
-			printf ("%stype: UCL_TIME\n", pre);
-			printf ("%svalue: %f\n", pre, ucl_object_todouble (obj));
-		}
-		else if (obj->type == UCL_USERDATA) {
-			printf ("%stype: UCL_USERDATA\n", pre);
-			printf ("%svalue: %p\n", pre, obj->value.ud);
-		}
+    while ((obj = ucl_iterate_object (tmp, &it, false))) {
+	printf ("%sucl object address: %p\n", pre + 4, obj);
+	if (obj->key != NULL) {
+	    printf ("%skey: \"%s\"\n", pre, ucl_object_key (obj));
 	}
+	printf ("%sref: %u\n", pre, obj->ref);
+	printf ("%slen: %u\n", pre, obj->len);
+	printf ("%sprev: %p\n", pre, obj->prev);
+	printf ("%snext: %p\n", pre, obj->next);
+	if (obj->type == UCL_OBJECT) {
+	    printf ("%stype: UCL_OBJECT\n", pre);
+	    printf ("%svalue: %p\n", pre, obj->value.ov);
+	    it_obj = NULL;
+	    while ((cur = ucl_iterate_object (obj, &it_obj, true))) {
+		ucl_obj_dump (cur, shift + 2);
+	    }
+	}
+	else if (obj->type == UCL_ARRAY) {
+	    printf ("%stype: UCL_ARRAY\n", pre);
+	    printf ("%svalue: %p\n", pre, obj->value.av);
+	    it_obj = NULL;
+	    while ((cur = ucl_iterate_object (obj, &it_obj, true))) {
+		ucl_obj_dump (cur, shift + 2);
+	    }
+	}
+	else if (obj->type == UCL_INT) {
+	    printf ("%stype: UCL_INT\n", pre);
+	    printf ("%svalue: %jd\n", pre, (intmax_t)ucl_object_toint (obj));
+	}
+	else if (obj->type == UCL_FLOAT) {
+	    printf ("%stype: UCL_FLOAT\n", pre);
+	    printf ("%svalue: %f\n", pre, ucl_object_todouble (obj));
+	}
+	else if (obj->type == UCL_STRING) {
+	    printf ("%stype: UCL_STRING\n", pre);
+	    printf ("%svalue: \"%s\"\n", pre, ucl_object_tostring (obj));
+	}
+	else if (obj->type == UCL_BOOLEAN) {
+	    printf ("%stype: UCL_BOOLEAN\n", pre);
+	    printf ("%svalue: %s\n", pre, ucl_object_tostring_forced (obj));
+	}
+	else if (obj->type == UCL_TIME) {
+	    printf ("%stype: UCL_TIME\n", pre);
+	    printf ("%svalue: %f\n", pre, ucl_object_todouble (obj));
+	}
+	else if (obj->type == UCL_USERDATA) {
+	    printf ("%stype: UCL_USERDATA\n", pre);
+	    printf ("%svalue: %p\n", pre, obj->value.ud);
+	}
+    }
 
-	free (pre);
+    free (pre);
 }
