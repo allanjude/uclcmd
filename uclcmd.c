@@ -727,12 +727,15 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 	    if (obj->type == UCL_ARRAY) {
 		asprintf(&newkey, "%s%i", output_sepchar, arrindex);
 		arrindex++;
+	    } else if (strlen(nodepath) == 0) {
+		asprintf(&newkey, "%s", ucl_object_key(cur));
 	    } else {
 		asprintf(&newkey, "%s%s", output_sepchar, ucl_object_key(cur));
 	    }
 	    if (ucl_object_type(cur) == UCL_OBJECT ||
 		    ucl_object_type(cur) == UCL_ARRAY) {
 		it2 = NULL;
+		output_chunk(cur, nodepath, newkey);
 		if (ucl_object_type(cur) == UCL_ARRAY) {
 		    ucl_object_t *arrlen = NULL;
 		    char *tmpkeyname;
@@ -1327,7 +1330,7 @@ type_as_string (const ucl_object_t *obj)
 void
 ucl_obj_dump (const ucl_object_t *obj, unsigned int shift)
 {
-    int num = shift * 4 + 5;
+    int num = shift * 2 + 5;
     char *pre = (char *) malloc (num * sizeof(char));
     const ucl_object_t *cur, *tmp;
     ucl_object_iter_t it = NULL, it_obj = NULL;
