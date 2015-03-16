@@ -1198,7 +1198,7 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
 	if (nonewline) {
 	    fprintf(stderr, "WARN: UCL output cannot be 'nonewline'd\n");
 	}
-	if (show_keys == 1)
+	if (show_keys == 1 && strlen(key) > 0)
 	    printf("%s%s=", nodepath, key);
 	printf("%s", result);
 	free(result);
@@ -1214,7 +1214,7 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
 	    fprintf(stderr,
 		"WARN: non-compact JSON output cannot be 'nonewline'd\n");
 	}
-	if (show_keys == 1)
+	if (show_keys == 1 && strlen(key) > 0)
 	    printf("%s%s=", nodepath, key);
 	printf("%s", result);
 	free(result);
@@ -1226,7 +1226,7 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
 	break;
     case UCL_EMIT_JSON_COMPACT: /* Compact JSON */
 	result = ucl_object_emit(obj, output_type);
-	if (show_keys == 1)
+	if (show_keys == 1 && strlen(key) > 0)
 	    printf("%s%s=", nodepath, key);
 	printf("%s", result);
 	free(result);
@@ -1241,7 +1241,7 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
 	if (nonewline) {
 	    fprintf(stderr, "WARN: YAML output cannot be 'nonewline'd\n");
 	}
-	if (show_keys == 1)
+	if (show_keys == 1 && strlen(key) > 0)
 	    printf("%s%s=", nodepath, key);
 	printf("%s", result);
 	free(result);
