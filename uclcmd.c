@@ -42,7 +42,7 @@
  * Does ucl_object_insert_key_common need to respect NO_IMPLICIT_ARRAY
  */
 
-static int show_keys = 0, show_raw = 0, nonewline = 0, mode = 0, debug = 0;
+static int debug = 0, expand = 0, mode = 0, nonewline = 0, show_keys = 0, show_raw = 0;
 static bool firstline = true;
 static int output_type = 254;
 static ucl_object_t *root_obj = NULL;
@@ -95,7 +95,8 @@ main(int argc, char *argv[])
 	{ "cjson",	no_argument,            &output_type,
 	    UCL_EMIT_JSON_COMPACT },
 	{ "debug",      optional_argument,      NULL,       	'd' },
-	{ "delimiter",  required_argument,      NULL,       	'e' },
+	{ "delimiter",  required_argument,      NULL,       	'D' },
+	{ "expand",	no_argument,		NULL,		'e' },
 	{ "file",       required_argument,      NULL,       	'f' },
 	{ "get",        no_argument,            &mode,      	0 },
 	{ "json",       no_argument,            &output_type,
@@ -114,7 +115,7 @@ main(int argc, char *argv[])
 	{ NULL,         0,                      NULL,       	0 }
     };
 
-    while ((ch = getopt_long(argc, argv, "cde:f:gi:jklmnqrsuy", longopts, NULL)) != -1) {
+    while ((ch = getopt_long(argc, argv, "cdD:ef:gi:jklmnqrsuy", longopts, NULL)) != -1) {
 	switch (ch) {
 	case 'c':
 	    output_type = UCL_EMIT_JSON_COMPACT;
@@ -126,10 +127,12 @@ main(int argc, char *argv[])
 		debug = 1;
 	    }
 	    break;
-	case 'e':
-	    /* XXX: TODO: We only want the first character, malloc problems? */
+	case 'D':
 	    input_sepchar = optarg[0];
 	    output_sepchar = optarg[0];
+	    break;
+	case 'e':
+	    expand = 1;
 	    break;
 	case 'f':
 	    filename = optarg;
@@ -286,15 +289,16 @@ void
 usage()
 {
     fprintf(stderr, "%s\n",
-"Usage: uclcmd [-cdjklmnqruy] [-f filename] --get variable\n"
-"       uclcmd [-cdjklmnqruy] [-f filename] --set variable UCL\n"
-"       uclcmd [-cdjklmnqruy] [-f filename] [-i filename] --merge variable\n"
-"       uclcmd [-cdjklmnqruy] [-f filename] --remove variable\n"
+"Usage: uclcmd [-cdejklmnqruy] [-d char] [-f filename] --get variable\n"
+"       uclcmd [-cdejklmnqruy] [-d char] [-f filename] --set variable UCL\n"
+"       uclcmd [-cdejklmnqruy] [-d char] [-f filename] [-i filename] --merge variable\n"
+"       uclcmd [-cdejklmnqruy] [-d char] [-f filename] --remove variable\n"
 "\n"
 "OPTIONS:\n"
 "       -c --cjson      output compacted JSON\n"
 "       -d --debug      enable verbose debugging output\n"
-"       -e --delimiter  character to use as element delimiter (default is .)\n"
+"       -D --delimiter  character to use as element delimiter (default is .)\n"
+"	-e --expand	Output the list of keys when encountering an object\n"
 "       -f --file       path to a file to read or write\n"
 "       -g --get        return the value of the indicated key\n"
 "       -i --input      use indicated file as additional input (for merging)\n"
