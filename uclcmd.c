@@ -49,8 +49,8 @@ static ucl_object_t *root_obj = NULL;
 static ucl_object_t *set_obj = NULL;
 struct ucl_parser *parser = NULL;
 struct ucl_parser *setparser = NULL;
-static char *input_sepchar = ".";
-static char *output_sepchar = ".";
+static char input_sepchar = '.';
+static char output_sepchar = '.';
 
 
 void usage();
@@ -66,7 +66,7 @@ ucl_object_t* get_parent(char *selected_node);
 ucl_object_t* get_object(char *selected_node);
 void output_key(const ucl_object_t *obj, char *nodepath, const char *inkey);
 void output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey);
-void replace_sep(char *key, char *oldsep, char *newsep);
+void replace_sep(char *key, char oldsep, char newsep);
 void cleanup();
 char* type_as_string (const ucl_object_t *obj);
 void ucl_obj_dump (const ucl_object_t *obj, unsigned int shift);
@@ -128,7 +128,8 @@ main(int argc, char *argv[])
 	    break;
 	case 'e':
 	    /* XXX: TODO: We only want the first character, malloc problems? */
-	    input_sepchar = optarg;
+	    input_sepchar = optarg[0];
+	    output_sepchar = optarg[0];
 	    break;
 	case 'f':
 	    filename = optarg;
@@ -153,7 +154,7 @@ main(int argc, char *argv[])
 	    show_keys = 1;
 	    break;
 	case 'l':
-	    output_sepchar = "_";
+	    output_sepchar = '_';
 	    break;
 	case 'n':
 	    nonewline = 1;
@@ -225,7 +226,7 @@ main(int argc, char *argv[])
 	}
 
 	if (success) {
-	    get_mode(input_sepchar);
+	    get_mode("");
 	} else {
 	    fprintf(stderr, "Error: Failed to apply the set operation.\n");
 	    ret = 1;
@@ -249,7 +250,7 @@ main(int argc, char *argv[])
 	}
 
 	if (success) {
-	    get_mode(input_sepchar);
+	    get_mode("");
 	} else {
 	    fprintf(stderr, "Error: Failed to apply the merge operation.\n");
 	    ret = 1;
@@ -268,7 +269,7 @@ main(int argc, char *argv[])
 	}
 
 	ret = ucl_object_delete_key(root_obj, argv[0]);
-	get_mode(input_sepchar);
+	get_mode("");
 
 	break;
     }
@@ -413,11 +414,11 @@ get_parent(char *selected_node)
     char *dst_frag = NULL;
     ucl_object_t *parent_obj = NULL;
 
-    if (strncmp(dst_key, input_sepchar, 1) == 0) {
+    if (strlen(dst_key) == 1 && dst_key[0] == input_sepchar) {
 	dst_key++;
     }
     dst_prefix = strdup(dst_key);
-    dst_frag = strrchr(dst_prefix, input_sepchar[0]);
+    dst_frag = strrchr(dst_prefix, input_sepchar);
 
     if (dst_frag == NULL || strlen(dst_frag) == 0) {
 	dst_frag = dst_key;
@@ -431,7 +432,7 @@ get_parent(char *selected_node)
 	dst_frag[0] = '\0';
 	dst_frag++;
 	parent_obj = __DECONST(ucl_object_t *,
-	    ucl_lookup_path(root_obj, dst_prefix));
+	    ucl_lookup_path_char(root_obj, dst_prefix, input_sepchar));
     }
 
     free(dst_prefix);
@@ -452,11 +453,11 @@ get_object(char *selected_node)
     ucl_object_t *parent_obj = NULL;
     ucl_object_t *selected_obj = NULL;
 
-    if (strncmp(dst_key, input_sepchar, 1) == 0) {
+    if (strlen(dst_key) == 1 && dst_key[0] == input_sepchar) {
 	dst_key++;
     }
     dst_prefix = strdup(dst_key);
-    dst_frag = strrchr(dst_prefix, input_sepchar[0]);
+    dst_frag = strrchr(dst_prefix, input_sepchar);
 
     if (dst_frag == NULL || strlen(dst_frag) == 0) {
 	dst_frag = dst_key;
@@ -470,7 +471,7 @@ get_object(char *selected_node)
 	dst_frag[0] = '\0';
 	dst_frag++;
 	parent_obj = __DECONST(ucl_object_t *,
-	    ucl_lookup_path(root_obj, dst_prefix));
+	    ucl_lookup_path_char(root_obj, dst_prefix, input_sepchar));
 	if (parent_obj == NULL) {
 	    free(dst_prefix);
 	    return NULL;
@@ -516,13 +517,13 @@ get_mode(char *requested_node)
 	    fprintf(stderr, "DEBUG: Using root node\n");
 	}
 	found_object = root_obj;
-    } else if (strcmp(node_name, input_sepchar) == 0) {
+    } else if (strlen(node_name) == 1 && node_name[0] == input_sepchar) {
 	if (debug > 0) {
 	    fprintf(stderr, "DEBUG: Using root node\n");
 	}
 	found_object = root_obj;
     } else {
-	if (strncmp(node_name, input_sepchar, 1) == 0) {
+	if (node_name[0] == input_sepchar) {
 	    /* Removing leading dot */
 	    node_name++;
 	}
@@ -530,7 +531,7 @@ get_mode(char *requested_node)
 	if (debug > 0) {
 	    fprintf(stderr, "DEBUG: Searching node %s\n", node_name);
 	}
-	found_object = ucl_lookup_path(found_object, node_name);
+	found_object = ucl_lookup_path_char(found_object, node_name, input_sepchar);
 	free(nodepath);
 	asprintf(&nodepath, "%s", node_name);
     }
@@ -682,10 +683,10 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 		    continue;
 		}
 		if (obj->type == UCL_ARRAY) {
-		    asprintf(&newkey, "%s%i", output_sepchar, arrindex);
+		    asprintf(&newkey, "%c%i", output_sepchar, arrindex);
 		    arrindex++;
 		} else {
-		    asprintf(&newkey, "%s%s", output_sepchar, ucl_object_key(cur));
+		    asprintf(&newkey, "%c%s", output_sepchar, ucl_object_key(cur));
 		}
 		output_key(cur, nodepath, newkey);
 		loopcount++;
@@ -725,12 +726,12 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 	    char *newkey = NULL;
 	    char *newnodepath = NULL;
 	    if (obj->type == UCL_ARRAY) {
-		asprintf(&newkey, "%s%i", output_sepchar, arrindex);
+		asprintf(&newkey, "%c%i", output_sepchar, arrindex);
 		arrindex++;
 	    } else if (strlen(nodepath) == 0) {
 		asprintf(&newkey, "%s", ucl_object_key(cur));
 	    } else {
-		asprintf(&newkey, "%s%s", output_sepchar, ucl_object_key(cur));
+		asprintf(&newkey, "%c%s", output_sepchar, ucl_object_key(cur));
 	    }
 	    if (ucl_object_type(cur) == UCL_OBJECT ||
 		    ucl_object_type(cur) == UCL_ARRAY) {
@@ -741,7 +742,7 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 		    char *tmpkeyname;
 
 		    arrlen = ucl_object_fromint(cur->len);
-		    asprintf(&tmpkeyname, "%s%s%s", newkey, output_sepchar, "_length");
+		    asprintf(&tmpkeyname, "%s%c%s", newkey, output_sepchar, "_length");
 		    output_chunk(arrlen, nodepath, tmpkeyname);
 		    free(tmpkeyname);
 		}
@@ -775,10 +776,10 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 	    while ((cur = ucl_iterate_object(obj, &it, true))) {
 		char *newkey = NULL;
 		if (obj->type == UCL_ARRAY) {
-		    asprintf(&newkey, "%s%i", output_sepchar, arrindex);
+		    asprintf(&newkey, "%c%i", output_sepchar, arrindex);
 		    arrindex++;
 		} else {
-		    asprintf(&newkey, "%s%s", output_sepchar, ucl_object_key(cur));
+		    asprintf(&newkey, "%c%s", output_sepchar, ucl_object_key(cur));
 		}
 		if (cur->next != 0 && cur->type != UCL_ARRAY) {
 		    /* Implicit array */
@@ -801,11 +802,11 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 		while ((cur = ucl_iterate_object(obj, &it, true))) {
 		    char *newnodepath = NULL;
 		    if (obj->type == UCL_ARRAY) {
-			asprintf(&newnodepath, "%s%s%i", nodepath, output_sepchar,
+			asprintf(&newnodepath, "%s%c%i", nodepath, output_sepchar,
 			    arrindex);
 			arrindex++;
 		    } else {
-			asprintf(&newnodepath, "%s%s%s", nodepath, output_sepchar,
+			asprintf(&newnodepath, "%s%c%s", nodepath, output_sepchar,
 			    ucl_object_key(cur));
 		    }
 		    if (cur->next != 0 && cur->type != UCL_ARRAY) {
@@ -827,7 +828,7 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 	if (loopcount == 0 && debug > 0) {
 	    fprintf(stderr, "DEBUG: Found 0 objects to each over\n");
 	}
-    } else if (strncmp(command_str, input_sepchar, 1) == 0) {
+    } else if (command_str[0] == input_sepchar) {
 	/* Separate and loop here */
 	char *reqnodelist = strdup(command_str);
 	char *reqnode = NULL;
@@ -837,7 +838,7 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 	    if (debug > 0) {
 		fprintf(stderr, "DEBUG: Searching for subnode %s\n", reqnode);
 	    }
-	    cur = ucl_lookup_path(obj, reqnode);
+	    cur = ucl_lookup_path_char(obj, reqnode, input_sepchar);
 	    /* If this is the last thing on the stack, output */
 	    if (remaining_commands == NULL) {
 		/* Would also check cur==null here, but that breaks |keys */
@@ -849,11 +850,11 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 		if (next_command != NULL) {
 		    char *newnodepath = NULL;
 		    if (obj->type == UCL_ARRAY) {
-			asprintf(&newnodepath, "%s%s%i", nodepath, output_sepchar,
+			asprintf(&newnodepath, "%s%c%i", nodepath, output_sepchar,
 			    arrindex);
 			arrindex++;
 		    } else {
-			asprintf(&newnodepath, "%s%s%s", nodepath, output_sepchar,
+			asprintf(&newnodepath, "%s%c%s", nodepath, output_sepchar,
 			    ucl_object_key(cur));
 		    }
 		    if (debug > 2) {
@@ -931,7 +932,7 @@ set_mode(char *destination_node, char *data)
 
     /* Replace it in the object here */
     if (dst_obj->type == UCL_ARRAY) {
-	char *dst_frag = strrchr(destination_node, input_sepchar[0]);
+	char *dst_frag = strrchr(destination_node, input_sepchar);
 
 	/* XXX TODO: What if the destination_node only points to an array */
 	/* XXX TODO: What if we want to replace an entire array? */
@@ -1260,13 +1261,13 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
 }
 
 void
-replace_sep(char *key, char *oldsep, char *newsep)
+replace_sep(char *key, char oldsep, char newsep)
 {
     int idx = 0;
     if (oldsep == newsep) return;
     while (key[idx] != '\0') {
-	if (key[idx] == oldsep[0]) {
-	    key[idx] = newsep[0];
+	if (key[idx] == oldsep) {
+	    key[idx] = newsep;
 	}
 	idx++;
     }
