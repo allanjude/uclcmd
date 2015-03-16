@@ -721,6 +721,8 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 	    fprintf(stderr, "DEBUG: Found 0 objects to each over\n");
 	}
     } else if (strcmp(command_str, "recurse") == 0) {
+	if (strlen(nodepath) > 0)
+	    output_chunk(obj, nodepath, "");
 	it = NULL;
 	while ((cur = ucl_iterate_object(obj, &it, true))) {
 	    char *newkey = NULL;
@@ -736,7 +738,6 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 	    if (ucl_object_type(cur) == UCL_OBJECT ||
 		    ucl_object_type(cur) == UCL_ARRAY) {
 		it2 = NULL;
-		output_chunk(cur, nodepath, newkey);
 		if (ucl_object_type(cur) == UCL_ARRAY) {
 		    ucl_object_t *arrlen = NULL;
 		    char *tmpkeyname;
