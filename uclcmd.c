@@ -70,6 +70,7 @@ void replace_sep(char *key, char oldsep, char newsep);
 void cleanup();
 char* type_as_string (const ucl_object_t *obj);
 void ucl_obj_dump (const ucl_object_t *obj, unsigned int shift);
+char* expand_subkeys(const ucl_object_t *obj, char *nodepath);
 
 /*
  * This application provides a shell scripting friendly interface for reading
@@ -725,8 +726,32 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 	    fprintf(stderr, "DEBUG: Found 0 objects to each over\n");
 	}
     } else if (strcmp(command_str, "recurse") == 0) {
-	if (strlen(nodepath) > 0)
+	char *tmpkeyname = NULL;
+	if (strlen(nodepath) > 0) {
 	    output_chunk(obj, nodepath, "");
+	    if (ucl_object_type(obj) == UCL_ARRAY) {
+		    ucl_object_t *arrlen = NULL;
+
+		    arrlen = ucl_object_fromint(obj->len);
+		    asprintf(&tmpkeyname, "%c%s", output_sepchar, "_length");
+		    output_chunk(arrlen, nodepath, tmpkeyname);
+		    free(tmpkeyname);
+	    }
+	}
+	if (expand && ucl_object_type(obj) == UCL_OBJECT) {
+	    char *keylist = NULL;
+	    ucl_object_t *keystr = NULL;
+
+	    keylist = expand_subkeys(obj, nodepath);
+	    if (keylist != NULL) {
+		keystr = ucl_object_fromstring(keylist);
+		
+		asprintf(&tmpkeyname, "%c%s", output_sepchar, "_keys");
+		output_chunk(keystr, nodepath, tmpkeyname);
+		free(tmpkeyname);
+		free(keylist);
+	    }
+	}
 	it = NULL;
 	while ((cur = ucl_iterate_object(obj, &it, true))) {
 	    char *newkey = NULL;
@@ -742,15 +767,6 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 	    if (ucl_object_type(cur) == UCL_OBJECT ||
 		    ucl_object_type(cur) == UCL_ARRAY) {
 		it2 = NULL;
-		if (ucl_object_type(cur) == UCL_ARRAY) {
-		    ucl_object_t *arrlen = NULL;
-		    char *tmpkeyname;
-
-		    arrlen = ucl_object_fromint(cur->len);
-		    asprintf(&tmpkeyname, "%s%c%s", newkey, output_sepchar, "_length");
-		    output_chunk(arrlen, nodepath, tmpkeyname);
-		    free(tmpkeyname);
-		}
 		while ((cur2 = ucl_iterate_object(cur, &it2, false))) {
 		    if (nodepath != NULL && strlen(nodepath) > 0) {
 			asprintf(&newnodepath, "%s%s", nodepath, newkey);
@@ -1067,6 +1083,34 @@ merge_mode(char *destination_node, char *data)
     }
 
     return success;
+}
+
+char*
+expand_subkeys(const ucl_object_t *obj, char *nodepath)
+{
+	char *result = NULL;
+	int count = 0;
+	ucl_object_iter_t it = NULL;
+	const ucl_object_t *cur;
+
+	result = malloc(1024);
+	result[0] = '\0';
+	if (obj != NULL) {
+	    /* Compile a list of the keys in the current object */
+	    while ((cur = ucl_iterate_object(obj, &it, true))) {
+		if (!ucl_object_key(cur))
+		    continue;
+		if (strlen(result) > (1024 - 5 - strlen(ucl_object_key(cur)))) {
+			result = strcat(result, " ...");
+			break;
+		}
+		if (count)
+		    result = strcat(result, " ");
+		result = strcat(result, ucl_object_key(cur));
+		count++;
+	    }
+	}
+	return result;
 }
 
 void
