@@ -1,0 +1,18 @@
+- flag to drop prefix in shellvars mode (strip selector, string, num elements)
+- filter out an item (exclude a subtree)
+- compile configs (annotated with source)
+- comment processing
+- error messages with line # (libucl)
+- variable in rc.conf to rewrite configs to libucl
+- global config file, includes other configs in a namespace (show running config)
+- (search for *.ucl)
+- permission warnings, verbose option
+- 
+- for utils like sshd, ucl -> old config utilities
+
+- (libucl) include command force a prefix (namespace)
+- include an entire file as a value (motd)
+- etc/defaults ucl.rules (motd)
+
+
+bug: guest.features|each|values
