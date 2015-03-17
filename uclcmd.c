@@ -729,7 +729,7 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 	char *tmpkeyname = NULL;
 	if (strlen(nodepath) > 0) {
 	    output_chunk(obj, nodepath, "");
-	    if (ucl_object_type(obj) == UCL_ARRAY) {
+	    if (expand && ucl_object_type(obj) == UCL_ARRAY) {
 		    ucl_object_t *arrlen = NULL;
 
 		    arrlen = ucl_object_fromint(obj->len);
@@ -1042,7 +1042,7 @@ merge_mode(char *destination_node, char *data)
 	    fprintf(stderr, "Merging object %s with object %s\n",
 		ucl_object_key(sub_obj), ucl_object_key(set_obj));
 	}
-	/* not supported:
+	/* XXX not supported:
 	 * success = ucl_object_merge(sub_obj, set_obj, false, true);
 	 */
 	success = ucl_object_merge(sub_obj, set_obj, false);
