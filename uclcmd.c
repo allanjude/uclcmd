@@ -481,7 +481,7 @@ get_object(char *selected_node)
 	    free(dst_prefix);
 	    return NULL;
 	}
-	if (parent_obj->type == UCL_ARRAY) {
+	if (ucl_object_type(parent_obj) == UCL_ARRAY) {
 	    selected_obj = __DECONST(ucl_object_t *,
 		ucl_array_find_index(parent_obj, strtoul(dst_frag, NULL, 10)));
 	} else {
@@ -622,7 +622,7 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 	} else {
 	    if (show_keys == 1)
 		printf("%s=", nodepath);
-	    switch(obj->type) {
+	    switch(ucl_object_type(obj)) {
 	    case UCL_OBJECT:
 		printf("object");
 		break;
@@ -687,7 +687,7 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 		if (cur == NULL) {
 		    continue;
 		}
-		if (obj->type == UCL_ARRAY) {
+		if (ucl_object_type(obj) == UCL_ARRAY) {
 		    asprintf(&newkey, "%c%i", output_sepchar, arrindex);
 		    arrindex++;
 		} else {
@@ -756,7 +756,7 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 	while ((cur = ucl_iterate_object(obj, &it, true))) {
 	    char *newkey = NULL;
 	    char *newnodepath = NULL;
-	    if (obj->type == UCL_ARRAY) {
+	    if (ucl_object_type(obj) == UCL_ARRAY) {
 		asprintf(&newkey, "%c%i", output_sepchar, arrindex);
 		arrindex++;
 	    } else if (strlen(nodepath) == 0) {
@@ -771,7 +771,7 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 		    if (nodepath != NULL && strlen(nodepath) > 0) {
 			asprintf(&newnodepath, "%s%s", nodepath, newkey);
 		    } else {
-			if (obj->type == UCL_ARRAY) {
+			if (ucl_object_type(obj) == UCL_ARRAY) {
 			    asprintf(&newnodepath, "%i", arrindex);
 			} else {
 			    asprintf(&newnodepath, "%s", ucl_object_key(cur2));
@@ -796,7 +796,7 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 	    it = NULL;
 	    while ((cur = ucl_iterate_object(obj, &it, true))) {
 		char *newkey = NULL;
-		if (obj->type == UCL_ARRAY) {
+		if (ucl_object_type(obj) == UCL_ARRAY) {
 		    asprintf(&newkey, "%c%i", output_sepchar, arrindex);
 		    arrindex++;
 		} else {
@@ -822,7 +822,7 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 		it = NULL;
 		while ((cur = ucl_iterate_object(obj, &it, true))) {
 		    char *newnodepath = NULL;
-		    if (obj->type == UCL_ARRAY) {
+		    if (ucl_object_type(obj) == UCL_ARRAY) {
 			asprintf(&newnodepath, "%s%c%i", nodepath, output_sepchar,
 			    arrindex);
 			arrindex++;
@@ -870,7 +870,7 @@ process_get_command(const ucl_object_t *obj, char *nodepath,
 		char *next_command = strsep(&rcmds, "|");
 		if (next_command != NULL) {
 		    char *newnodepath = NULL;
-		    if (obj->type == UCL_ARRAY) {
+		    if (ucl_object_type(obj) == UCL_ARRAY) {
 			asprintf(&newnodepath, "%s%c%i", nodepath, output_sepchar,
 			    arrindex);
 			arrindex++;
@@ -926,7 +926,7 @@ set_mode(char *destination_node, char *data)
 	set_obj = parse_input(setparser, stdin);
     } else {
 	/* User provided data inline */
-	if (sub_obj->type != UCL_OBJECT && sub_obj->type != UCL_ARRAY) {
+	if (ucl_object_type(sub_obj) != UCL_OBJECT && ucl_object_type(sub_obj) != UCL_ARRAY) {
 	    /* Destination is a scalar etc */
 	    set_obj = ucl_object_fromstring_common(data, 0,
 		UCL_STRING_PARSE);
@@ -952,7 +952,7 @@ set_mode(char *destination_node, char *data)
     }
 
     /* Replace it in the object here */
-    if (dst_obj->type == UCL_ARRAY) {
+    if (ucl_object_type(dst_obj) == UCL_ARRAY) {
 	char *dst_frag = strrchr(destination_node, input_sepchar);
 
 	/* XXX TODO: What if the destination_node only points to an array */
@@ -1005,7 +1005,7 @@ merge_mode(char *destination_node, char *data)
 	set_obj = parse_input(setparser, stdin);
     } else {
 	/* User provided data inline */
-	if (sub_obj->type != UCL_OBJECT && sub_obj->type != UCL_ARRAY) {
+	if (ucl_object_type(sub_obj) != UCL_OBJECT && ucl_object_type(sub_obj) != UCL_ARRAY) {
 	    /* Destination is a scalar etc */
 	    set_obj = ucl_object_fromstring_common(data, 0,
 		UCL_STRING_PARSE);
@@ -1031,13 +1031,13 @@ merge_mode(char *destination_node, char *data)
     }
 
     /* Add it to the object here */
-    if (sub_obj->type == UCL_ARRAY && set_obj->type == UCL_ARRAY) {
+    if (ucl_object_type(sub_obj) == UCL_ARRAY && ucl_object_type(set_obj) == UCL_ARRAY) {
 	if (debug > 0) {
 	    fprintf(stderr, "Merging array of size %u with array of size %u\n",
 		sub_obj->len, set_obj->len);
 	}
 	success = ucl_array_merge(sub_obj, set_obj, false);
-    } else if (sub_obj->type == UCL_OBJECT && set_obj->type == UCL_OBJECT) {
+    } else if (ucl_object_type(sub_obj) == UCL_OBJECT && ucl_object_type(set_obj) == UCL_OBJECT) {
 	if (debug > 0) {
 	    fprintf(stderr, "Merging object %s with object %s\n",
 		ucl_object_key(sub_obj), ucl_object_key(set_obj));
@@ -1046,14 +1046,14 @@ merge_mode(char *destination_node, char *data)
 	 * success = ucl_object_merge(sub_obj, set_obj, false, true);
 	 */
 	success = ucl_object_merge(sub_obj, set_obj, false);
-    } else if (sub_obj->type == UCL_ARRAY) {
+    } else if (ucl_object_type(sub_obj) == UCL_ARRAY) {
 	if (debug > 0) {
 	    fprintf(stderr, "Appending object to array of size %u\n",
 		sub_obj->len);
 	}
 	success = ucl_array_append(sub_obj, ucl_object_ref(set_obj));
-    } else if (sub_obj->type != UCL_OBJECT && sub_obj->type != UCL_ARRAY &&
-	    set_obj->type != UCL_OBJECT && set_obj->type != UCL_ARRAY) {
+    } else if (ucl_object_type(sub_obj) != UCL_OBJECT && ucl_object_type(sub_obj) != UCL_ARRAY &&
+	    ucl_object_type(set_obj) != UCL_OBJECT && ucl_object_type(set_obj) != UCL_ARRAY) {
 	/* Create an explicit array */
 	if (debug > 0) {
 	    fprintf(stderr, "Creating an array and appended the new item\n");
@@ -1070,8 +1070,8 @@ merge_mode(char *destination_node, char *data)
 	/* Replace the old object with the newly created one */
 	success = ucl_object_replace_key(dst_obj, old_obj,
 	    ucl_object_key(sub_obj), 0, true);
-    } else if (dst_obj->type == UCL_OBJECT && set_obj->type != UCL_OBJECT
-	    && set_obj->type != UCL_ARRAY) {
+    } else if (ucl_object_type(dst_obj) == UCL_OBJECT && ucl_object_type(set_obj) != UCL_OBJECT
+	    && ucl_object_type(set_obj) != UCL_ARRAY) {
 	printf("Not implemented yet\n");
     } else {
 	if (debug > 0) {
@@ -1135,7 +1135,7 @@ output_key(const ucl_object_t *obj, char *nodepath, const char *inkey)
 	}
 	return;
     }
-    switch (obj->type) {
+    switch (ucl_object_type(obj)) {
     case UCL_OBJECT:
 	if (debug >= 3) {
 	    fprintf(stderr, "DEBUG: key=%s\nlen=%u\ntype=UCL_OBJECT\n"
@@ -1346,31 +1346,31 @@ type_as_string (const ucl_object_t *obj)
 
     if (obj == NULL) {
 	return NULL;
-    } else if (obj->type == UCL_OBJECT) {
+    } else if (ucl_object_type(obj) == UCL_OBJECT) {
 	asprintf(&ret, "UCL_OBJECT");
     }
-    else if (obj->type == UCL_ARRAY) {
+    else if (ucl_object_type(obj) == UCL_ARRAY) {
 	asprintf(&ret, "UCL_ARRAY");
     }
-    else if (obj->type == UCL_INT) {
+    else if (ucl_object_type(obj) == UCL_INT) {
 	asprintf(&ret, "UCL_INT");
     }
-    else if (obj->type == UCL_FLOAT) {
+    else if (ucl_object_type(obj) == UCL_FLOAT) {
 	asprintf(&ret, "UCL_FLOAT");
     }
-    else if (obj->type == UCL_STRING) {
+    else if (ucl_object_type(obj) == UCL_STRING) {
 	asprintf(&ret, "UCL_STRING");
     }
-    else if (obj->type == UCL_BOOLEAN) {
+    else if (ucl_object_type(obj) == UCL_BOOLEAN) {
 	asprintf(&ret, "UCL_BOOLEAN");
     }
-    else if (obj->type == UCL_TIME) {
+    else if (ucl_object_type(obj) == UCL_TIME) {
 	asprintf(&ret, "UCL_TIME");
     }
-    else if (obj->type == UCL_USERDATA) {
+    else if (ucl_object_type(obj) == UCL_USERDATA) {
 	asprintf(&ret, "UCL_USERDATA");
     }
-    else if (obj->type == UCL_NULL) {
+    else if (ucl_object_type(obj) == UCL_NULL) {
 	asprintf(&ret, "UCL_NULL");
     }
 
@@ -1400,7 +1400,7 @@ ucl_obj_dump (const ucl_object_t *obj, unsigned int shift)
 	printf ("%slen: %u\n", pre, obj->len);
 	printf ("%sprev: %p\n", pre, obj->prev);
 	printf ("%snext: %p\n", pre, obj->next);
-	if (obj->type == UCL_OBJECT) {
+	if (ucl_object_type(obj) == UCL_OBJECT) {
 	    printf ("%stype: UCL_OBJECT\n", pre);
 	    printf ("%svalue: %p\n", pre, obj->value.ov);
 	    it_obj = NULL;
@@ -1408,7 +1408,7 @@ ucl_obj_dump (const ucl_object_t *obj, unsigned int shift)
 		ucl_obj_dump (cur, shift + 2);
 	    }
 	}
-	else if (obj->type == UCL_ARRAY) {
+	else if (ucl_object_type(obj) == UCL_ARRAY) {
 	    printf ("%stype: UCL_ARRAY\n", pre);
 	    printf ("%svalue: %p\n", pre, obj->value.av);
 	    it_obj = NULL;
@@ -1416,27 +1416,27 @@ ucl_obj_dump (const ucl_object_t *obj, unsigned int shift)
 		ucl_obj_dump (cur, shift + 2);
 	    }
 	}
-	else if (obj->type == UCL_INT) {
+	else if (ucl_object_type(obj) == UCL_INT) {
 	    printf ("%stype: UCL_INT\n", pre);
 	    printf ("%svalue: %jd\n", pre, (intmax_t)ucl_object_toint (obj));
 	}
-	else if (obj->type == UCL_FLOAT) {
+	else if (ucl_object_type(obj) == UCL_FLOAT) {
 	    printf ("%stype: UCL_FLOAT\n", pre);
 	    printf ("%svalue: %f\n", pre, ucl_object_todouble (obj));
 	}
-	else if (obj->type == UCL_STRING) {
+	else if (ucl_object_type(obj) == UCL_STRING) {
 	    printf ("%stype: UCL_STRING\n", pre);
 	    printf ("%svalue: \"%s\"\n", pre, ucl_object_tostring (obj));
 	}
-	else if (obj->type == UCL_BOOLEAN) {
+	else if (ucl_object_type(obj) == UCL_BOOLEAN) {
 	    printf ("%stype: UCL_BOOLEAN\n", pre);
 	    printf ("%svalue: %s\n", pre, ucl_object_tostring_forced (obj));
 	}
-	else if (obj->type == UCL_TIME) {
+	else if (ucl_object_type(obj) == UCL_TIME) {
 	    printf ("%stype: UCL_TIME\n", pre);
 	    printf ("%svalue: %f\n", pre, ucl_object_todouble (obj));
 	}
-	else if (obj->type == UCL_USERDATA) {
+	else if (ucl_object_type(obj) == UCL_USERDATA) {
 	    printf ("%stype: UCL_USERDATA\n", pre);
 	    printf ("%svalue: %p\n", pre, obj->value.ud);
 	}
