@@ -128,7 +128,9 @@ remove_main(int argc, char *argv[])
 	root_obj = parse_input(parser, stdin);
     }
 
-    ret = ucl_object_delete_key(root_obj, argv[0]);
+    for (k = 0; k < argc; k++) {
+	success = ucl_object_delete_key(root_obj, argv[k]);
+    }
     get_mode("");
 
     cleanup();
