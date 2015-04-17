@@ -32,7 +32,7 @@ int
 set_main(int argc, char *argv[])
 {
     const char *filename = NULL;
-    int ret = 0, k = 0, ch;
+    int ret = 0, ch;
     bool success = false;
 
     /* Initialize parser */
