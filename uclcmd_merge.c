@@ -29,6 +29,131 @@
 #include "uclcmd.h"
 
 int
+merge_main(int argc, char *argv[])
+{
+    const char *filename = NULL;
+    int ret = 0, k = 0, ch;
+    bool success = false;
+
+    /* Initialize parser */
+    parser = ucl_parser_new(UCL_PARSER_KEY_LOWERCASE |
+        UCL_PARSER_NO_IMPLICIT_ARRAYS);
+
+    /*	options	descriptor */
+    static struct option longopts[] = {
+	{ "cjson",	no_argument,            &output_type,
+	    UCL_EMIT_JSON_COMPACT },
+	{ "debug",      optional_argument,      NULL,       	'd' },
+	{ "delimiter",  required_argument,      NULL,       	'D' },
+	{ "expand",	no_argument,		NULL,		'e' },
+	{ "file",       required_argument,      NULL,       	'f' },
+	{ "json",       no_argument,            &output_type,
+	    UCL_EMIT_JSON },
+	{ "keys",       no_argument,            &show_keys, 	1 },
+	{ "input",    	no_argument,            NULL,  		'i' },
+	{ "nonewline",  no_argument,            &nonewline,  	1 },
+	{ "noquote",    no_argument,            &show_raw,  	1 },
+	{ "shellvars",  no_argument,            NULL,      	'l' },
+	{ "ucl",        no_argument,            &output_type,
+	    UCL_EMIT_CONFIG },
+	{ "yaml",       no_argument,            &output_type,	UCL_EMIT_YAML },
+	{ NULL,         0,                      NULL,       	0 }
+    };
+
+    while ((ch = getopt_long(argc, argv, "cdD:ef:i:jklnquy", longopts, NULL)) != -1) {
+	switch (ch) {
+	case 'c':
+	    output_type = UCL_EMIT_JSON_COMPACT;
+	    break;
+	case 'd':
+	    if (optarg != NULL) {
+		debug = strtol(optarg, NULL, 0);
+	    } else {
+		debug = 1;
+	    }
+	    break;
+	case 'D':
+	    input_sepchar = optarg[0];
+	    output_sepchar = optarg[0];
+	    break;
+	case 'e':
+	    expand = 1;
+	    break;
+	case 'f':
+	    filename = optarg;
+	    if (strcmp(optarg, "-") == 0) {
+		/* Input from STDIN */
+		root_obj = parse_input(parser, stdin);
+	    } else {
+		root_obj = parse_file(parser, filename);
+	    }
+	    break;
+	case 'i':
+	    printf("Not implemented yet\n");
+	    exit(1);
+	    break;
+	case 'j':
+	    output_type = UCL_EMIT_JSON;
+	    break;
+	case 'k':
+	    show_keys = 1;
+	    break;
+	case 'l':
+	    output_sepchar = '_';
+	    break;
+	case 'n':
+	    nonewline = 1;
+	    break;
+	case 'q':
+	    show_raw = 1;
+	    break;
+	case 'u':
+	    output_type = UCL_EMIT_CONFIG;
+	    break;
+	case 'y':
+	    output_type = UCL_EMIT_YAML;
+	    break;
+	case 0:
+	    break;
+	default:
+	    fprintf(stderr, "Error: Unexpected option: %i\n", ch);
+	    usage();
+	    break;
+	}
+    }
+    argc -= optind;
+    argv += optind;
+
+    if (argc == 0) {
+	usage();
+    }
+
+    if (filename == NULL) {
+	root_obj = parse_input(parser, stdin);
+    }
+
+    if (argc > 1) { /* XXX: need test for if > 2 inputs */
+	success = merge_mode(argv[0], argv[1]);
+    } else {
+	success = merge_mode(argv[0], NULL);
+    }
+
+    if (success) {
+	get_mode("");
+    } else {
+	fprintf(stderr, "Error: Failed to apply the merge operation.\n");
+	ret = 1;
+    }
+
+    cleanup();
+
+    if (nonewline) {
+	printf("\n");
+    }
+    return(ret);
+}
+
+int
 merge_mode(char *destination_node, char *data)
 {
     ucl_object_t *dst_obj = NULL;

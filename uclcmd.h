@@ -39,7 +39,7 @@
 #define __DECONST(type, var)    ((type)(uintptr_t)(const void *)(var))
 #endif
 
-extern int debug, expand, mode, nonewline, show_keys, show_raw;
+extern int debug, expand, nonewline, show_keys, show_raw;
 extern bool firstline;
 extern int output_type;
 extern ucl_object_t *root_obj;
@@ -49,24 +49,35 @@ extern struct ucl_parser *setparser;
 extern char input_sepchar;
 extern char output_sepchar;
 
-void usage();
-void cleanup();
+typedef int (*verb_func_t)(int argc, char *argv[]);
 
+typedef struct verbmap {
+	const char *verb;
+	verb_func_t callback;
+} verbmap_t;
+
+void cleanup();
 char* expand_subkeys(const ucl_object_t *obj, char *nodepath);
+int get_main(int argc, char *argv[]);
+void get_mode(char *requested_node);
 ucl_object_t* get_object(char *selected_node);
 ucl_object_t* get_parent(char *selected_node);
-void replace_sep(char *key, char oldsep, char newsep);
-char * type_as_string (const ucl_object_t *obj);
-int set_mode(char *destination_node, char *data);
+int merge_main(int argc, char *argv[]);
+int merge_mode(char *destination_node, char *data);
+void output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey);
+int output_main(int argc, char *argv[]);
+void output_key(const ucl_object_t *obj, char *nodepath, const char *inkey);
 ucl_object_t* parse_file(struct ucl_parser *parser, const char *filename);
 ucl_object_t* parse_input(struct ucl_parser *parser, FILE *source);
 ucl_object_t* parse_string(struct ucl_parser *parser, char *data);
-int merge_mode(char *destination_node, char *data);
-void get_mode(char *requested_node);
 int process_get_command(const ucl_object_t *obj, char *nodepath,
     const char *command_str, char *remaining_commands, int recurse);
-void output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey);
-void output_key(const ucl_object_t *obj, char *nodepath, const char *inkey);
-void ucl_obj_dump (const ucl_object_t *obj, unsigned int shift);
+int remove_main(int argc, char *argv[]);
+void replace_sep(char *key, char oldsep, char newsep);
+int set_main(int argc, char *argv[]);
+int set_mode(char *destination_node, char *data);
+char * type_as_string (const ucl_object_t *obj);
+void ucl_obj_dump(const ucl_object_t *obj, unsigned int shift);
+void usage();
 
 #endif /* UCLCMD_H_ */

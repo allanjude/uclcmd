@@ -28,6 +28,62 @@
 
 #include "uclcmd.h"
 
+int
+output_main(int argc, char *argv[])
+{
+    const char *filename = NULL;
+    int ret = 0, ch;
+
+    /* Initialize parser */
+    parser = ucl_parser_new(UCL_PARSER_KEY_LOWERCASE |
+        UCL_PARSER_NO_IMPLICIT_ARRAYS);
+
+    /*	options	descriptor */
+    static struct option longopts[] = {
+	{ "file",       required_argument,      NULL,       	'f' },
+	{ "input",    	no_argument,            NULL,  		'i' },
+	{ NULL,         0,                      NULL,       	0 }
+    };
+
+    while ((ch = getopt_long(argc, argv, "f:i:", longopts, NULL)) != -1) {
+	switch (ch) {
+	case 'f':
+	    filename = optarg;
+	    if (strcmp(optarg, "-") == 0) {
+		/* Input from STDIN */
+		root_obj = parse_input(parser, stdin);
+	    } else {
+		root_obj = parse_file(parser, filename);
+	    }
+	    break;
+	case 'i':
+	    printf("Not implemented yet\n");
+	    exit(1);
+	    break;
+	default:
+	    fprintf(stderr, "Error: Unexpected option: %i\n", ch);
+	    usage();
+	    break;
+	}
+    }
+    argc -= optind;
+    argv += optind;
+
+    if (filename == NULL) {
+	root_obj = parse_input(parser, stdin);
+    }
+
+    ucl_obj_dump(root_obj, 0);
+
+    cleanup();
+
+    if (nonewline) {
+	printf("\n");
+    }
+
+    return(ret);
+}
+
 void
 output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
 {
@@ -225,7 +281,7 @@ output_key(const ucl_object_t *obj, char *nodepath, const char *inkey)
 }
 
 void
-ucl_obj_dump (const ucl_object_t *obj, unsigned int shift)
+ucl_obj_dump(const ucl_object_t *obj, unsigned int shift)
 {
     int num = shift * 2 + 5;
     char *pre = (char *) malloc (num * sizeof(char));
