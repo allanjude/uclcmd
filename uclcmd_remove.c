@@ -41,22 +41,22 @@ remove_main(int argc, char *argv[])
 
     /*	options	descriptor */
     static struct option longopts[] = {
-	{ "cjson",	no_argument,            &output_type,
+	{ "cjson",	no_argument,		&output_type,
 	    UCL_EMIT_JSON_COMPACT },
-	{ "debug",      optional_argument,      NULL,       	'd' },
-	{ "delimiter",  required_argument,      NULL,       	'D' },
-	{ "expand",	no_argument,		NULL,		'e' },
-	{ "file",       required_argument,      NULL,       	'f' },
-	{ "json",       no_argument,            &output_type,
+	{ "debug",	optional_argument,	NULL,		'd' },
+	{ "delimiter",	required_argument,	NULL,		'D' },
+	{ "expand",	no_argument,		&expand,	1 },
+	{ "file",	required_argument,	NULL,		'f' },
+	{ "json",	no_argument,		&output_type,
 	    UCL_EMIT_JSON },
-	{ "keys",       no_argument,            &show_keys, 	1 },
-	{ "nonewline",  no_argument,            &nonewline,  	1 },
-	{ "noquote",    no_argument,            &show_raw,  	1 },
-	{ "shellvars",  no_argument,            NULL,      	'l' },
-	{ "ucl",        no_argument,            &output_type,
+	{ "keys",	no_argument,		&show_keys,	1 },
+	{ "nonewline",	no_argument,		&nonewline,	1 },
+	{ "noquote",	no_argument,		&show_raw,	1 },
+	{ "shellvars",	no_argument,		NULL,		'l' },
+	{ "ucl",	no_argument,		&output_type,
 	    UCL_EMIT_CONFIG },
-	{ "yaml",       no_argument,            &output_type,	UCL_EMIT_YAML },
-	{ NULL,         0,                      NULL,       	0 }
+	{ "yaml",	no_argument,		&output_type,	UCL_EMIT_YAML },
+	{ NULL,		0,			NULL,		0 }
     };
 
     while ((ch = getopt_long(argc, argv, "cdD:ef:jklnquy", longopts, NULL)) != -1) {
