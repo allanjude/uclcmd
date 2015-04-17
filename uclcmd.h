@@ -80,4 +80,22 @@ char * type_as_string (const ucl_object_t *obj);
 void ucl_obj_dump(const ucl_object_t *obj, unsigned int shift);
 void usage();
 
+int get_cmd_each(const ucl_object_t *obj, char *nodepath,
+    const char *command_str, char *remaining_commands, int recurse);
+int get_cmd_iterate(const ucl_object_t *obj, char *nodepath,
+    const char *command_str, char *remaining_commands, int recurse);
+int get_cmd_keys(const ucl_object_t *obj, char *nodepath,
+    const char *command_str, char *remaining_commands, int recurse);
+int get_cmd_length(const ucl_object_t *obj, char *nodepath,
+    const char *command_str, char *remaining_commands, int recurse);
+int get_cmd_none(const ucl_object_t *obj, char *nodepath,
+    const char *command_str, char *remaining_commands, int recurse);
+int get_cmd_recurse(const ucl_object_t *obj, char *nodepath,
+    const char *command_str, char *remaining_commands, int recurse);
+int get_cmd_type(const ucl_object_t *obj, char *nodepath,
+    const char *command_str, char *remaining_commands, int recurse);
+int get_cmd_values(const ucl_object_t *obj, char *nodepath,
+    const char *command_str, char *remaining_commands, int recurse);
+
+
 #endif /* UCLCMD_H_ */
