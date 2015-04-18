@@ -88,13 +88,13 @@ get_object(char *selected_node)
 	    free(dst_prefix);
 	    return NULL;
 	}
-	if (ucl_object_type(parent_obj) == UCL_ARRAY) {
-	    selected_obj = __DECONST(ucl_object_t *,
-		ucl_array_find_index(parent_obj, strtoul(dst_frag, NULL, 10)));
-	} else {
-	    selected_obj = __DECONST(ucl_object_t *,
-		ucl_object_find_key(parent_obj, dst_frag));
-	}
+    }
+    if (ucl_object_type(parent_obj) == UCL_ARRAY) {
+	selected_obj = __DECONST(ucl_object_t *,
+	    ucl_array_find_index(parent_obj, strtoul(dst_frag, NULL, 10)));
+    } else {
+	selected_obj = __DECONST(ucl_object_t *,
+	    ucl_object_find_key(parent_obj, dst_frag));
     }
     if (selected_obj == NULL) {
 	selected_obj = parent_obj;
