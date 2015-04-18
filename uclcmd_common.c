@@ -102,7 +102,8 @@ get_object(char *selected_node)
 
     if (debug > 0) {
 	fprintf(stderr, "selecting key: %s\n", dst_key);
-	fprintf(stderr, "selected sub-key: %s\n", dst_frag);
+	fprintf(stderr, "intended sub-key: %s\n", dst_frag);
+	fprintf(stderr, "selected sub-key: %s\n", ucl_object_key(selected_obj));
     }
 
     free(dst_prefix);
