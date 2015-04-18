@@ -33,6 +33,7 @@ remove_main(int argc, char *argv[])
 {
     const char *filename = NULL;
     int ret = 0, k = 0, ch;
+    ucl_object_t *obj_parent = NULL, *obj_child = NULL, *obj_temp = NULL;
     bool success = false;
 
     /* Initialize parser */
@@ -129,7 +130,51 @@ remove_main(int argc, char *argv[])
     }
 
     for (k = 0; k < argc; k++) {
-	success = ucl_object_delete_key(root_obj, argv[k]);
+	success = false;
+
+	obj_parent = get_parent(argv[k]);
+	if (obj_parent == NULL) {
+	    fprintf(stderr, "Failed to find parent of key %s, skipping...\n", argv[k]);
+	    continue;
+	}
+	obj_child = get_object(argv[k]);
+	if (obj_child == NULL) {
+	    fprintf(stderr, "Failed to find key %s, skipping...\n", argv[k]);
+	    continue;
+	}
+
+	/* if parent is an array, special case */
+	if (ucl_object_type(obj_parent) == UCL_ARRAY) {
+	    if (debug > 0) {
+		fprintf(stderr, "DEBUG: Attempting to removed index '%u' from '%s'\n",
+		    ucl_array_index_of(obj_parent, obj_child), ucl_object_key(obj_parent));
+	    }
+	    obj_temp = ucl_array_delete(obj_parent, obj_child);
+	    if (obj_temp != NULL) {
+		success = true;
+		ucl_object_unref(obj_temp);
+	    }
+	} else if (ucl_object_type(obj_parent) == UCL_OBJECT) {
+	    if (ucl_object_key(obj_child) != NULL) {
+		if (debug > 0) {
+		    fprintf(stderr, "DEBUG: Attempting to removed node '%s' from '%s'\n",
+			ucl_object_key(obj_child), ucl_object_key(obj_parent));
+		}
+		success = ucl_object_delete_key(obj_parent, ucl_object_key(obj_child));
+	    } else {
+		fprintf(stderr, "Failed to get key for '%s', skipping...\n", argv[k]);
+		continue;
+	    }
+	} else {
+	    fprintf(stderr, "Invalid parent object type for '%s', skipping...\n", argv[k]);
+	    continue;
+	}
+
+	if (!success) {
+	    fprintf(stderr, "Failed to remove key %s\n", argv[k]);
+	} else if (debug > 0) {
+	    fprintf(stderr, "DEBUG: Removed node %s\n", argv[k]);
+	}
     }
     get_mode("");
 
