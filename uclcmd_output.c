@@ -347,3 +347,73 @@ ucl_obj_dump(const ucl_object_t *obj, unsigned int shift)
 
     free (pre);
 }
+
+void
+ucl_obj_dump_safe(const ucl_object_t *obj, unsigned int shift)
+{
+    int num = shift * 2 + 5;
+    char *pre = (char *) malloc (num * sizeof(char));
+    const ucl_object_t *cur, *cur2;
+    ucl_object_iter_t it = NULL, it2 = NULL;
+
+    it = ucl_object_iterate_new(obj);
+    it2 = ucl_object_iterate_new(obj);
+
+    pre[--num] = 0x00;
+    while (num--)
+	    pre[num] = 0x20;
+
+    while ((cur = ucl_object_iterate_safe(it, false))) {
+	printf ("%sucl object address: %p\n", pre + 4, obj);
+	if (cur->key != NULL) {
+	    printf ("%skey: \"%s\"\n", pre, ucl_object_key (cur));
+	}
+	printf ("%sref: %u\n", pre, cur->ref);
+	printf ("%slen: %u\n", pre, cur->len);
+	printf ("%sprev: %p\n", pre, cur->prev);
+	printf ("%snext: %p\n", pre, cur->next);
+	if (ucl_object_type(cur) == UCL_OBJECT) {
+	    printf ("%stype: UCL_OBJECT\n", pre);
+	    printf ("%svalue: %p\n", pre, cur->value.ov);
+	    it2 = ucl_object_iterate_reset (it2, cur);
+	    while ((cur2 = ucl_object_iterate_safe(it2, true))) {
+		ucl_obj_dump (cur2, shift + 2);
+	    }
+	}
+	else if (ucl_object_type(cur) == UCL_ARRAY) {
+	    printf ("%stype: UCL_ARRAY\n", pre);
+	    printf ("%svalue: %p\n", pre, cur->value.av);
+	    it2 = ucl_object_iterate_reset (it2, cur);
+	    while ((cur2 = ucl_object_iterate_safe(it2, true))) {
+		ucl_obj_dump (cur2, shift + 2);
+	    }
+	}
+	else if (ucl_object_type(cur) == UCL_INT) {
+	    printf ("%stype: UCL_INT\n", pre);
+	    printf ("%svalue: %jd\n", pre, (intmax_t)ucl_object_toint (cur));
+	}
+	else if (ucl_object_type(cur) == UCL_FLOAT) {
+	    printf ("%stype: UCL_FLOAT\n", pre);
+	    printf ("%svalue: %f\n", pre, ucl_object_todouble (cur));
+	}
+	else if (ucl_object_type(cur) == UCL_STRING) {
+	    printf ("%stype: UCL_STRING\n", pre);
+	    printf ("%svalue: \"%s\"\n", pre, ucl_object_tostring (cur));
+	}
+	else if (ucl_object_type(cur) == UCL_BOOLEAN) {
+	    printf ("%stype: UCL_BOOLEAN\n", pre);
+	    printf ("%svalue: %s\n", pre, ucl_object_tostring_forced (cur));
+	}
+	else if (ucl_object_type(cur) == UCL_TIME) {
+	    printf ("%stype: UCL_TIME\n", pre);
+	    printf ("%svalue: %f\n", pre, ucl_object_todouble (cur));
+	}
+	else if (ucl_object_type(cur) == UCL_USERDATA) {
+	    printf ("%stype: UCL_USERDATA\n", pre);
+	    printf ("%svalue: %p\n", pre, cur->value.ud);
+	}
+    }
+
+    ucl_object_iterate_free (it);
+    free (pre);
+}

@@ -78,6 +78,7 @@ int set_main(int argc, char *argv[]);
 int set_mode(char *destination_node, char *data);
 char * type_as_string (const ucl_object_t *obj);
 void ucl_obj_dump(const ucl_object_t *obj, unsigned int shift);
+void ucl_obj_dump_safe(const ucl_object_t *obj, unsigned int shift);
 void usage();
 
 int get_cmd_each(const ucl_object_t *obj, char *nodepath,
