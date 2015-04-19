@@ -43,6 +43,7 @@ struct ucl_parser *parser = NULL;
 struct ucl_parser *setparser = NULL;
 char input_sepchar = '.';
 char output_sepchar = '.';
+char *include_file = NULL;
 
 /*
  * This application provides a shell scripting friendly interface for reading

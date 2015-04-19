@@ -89,8 +89,7 @@ set_main(int argc, char *argv[])
 	    }
 	    break;
 	case 'i':
-	    printf("Not implemented yet\n");
-	    exit(1);
+	    include_file = optarg;
 	    break;
 	case 'j':
 	    output_type = UCL_EMIT_JSON;
@@ -172,7 +171,10 @@ set_mode(char *destination_node, char *data)
 	return false;
     }
 
-    if (data == NULL || strcmp(data, "-") == 0) {
+    if (include_file != NULL) {
+	/* get UCL to add from file */
+	set_obj = parse_file(setparser, include_file);
+    } else if (data == NULL || strcmp(data, "-") == 0) {
 	/* get UCL to add from stdin */
 	set_obj = parse_input(setparser, stdin);
     } else {

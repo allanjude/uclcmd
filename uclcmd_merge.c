@@ -89,8 +89,7 @@ merge_main(int argc, char *argv[])
 	    }
 	    break;
 	case 'i':
-	    printf("Not implemented yet\n");
-	    exit(1);
+	    include_file = optarg;
 	    break;
 	case 'j':
 	    output_type = UCL_EMIT_JSON;
@@ -172,19 +171,15 @@ merge_mode(char *destination_node, char *data)
 	return false;
     }
 
-    if (data == NULL || strcmp(data, "-") == 0) {
+    if (include_file != NULL) {
+	/* get UCL to add from file */
+	set_obj = parse_file(setparser, include_file);
+    } else if (data == NULL || strcmp(data, "-") == 0) {
 	/* get UCL to add from stdin */
 	set_obj = parse_input(setparser, stdin);
     } else {
 	/* User provided data inline */
-	if (ucl_object_type(sub_obj) != UCL_OBJECT && ucl_object_type(sub_obj) != UCL_ARRAY) {
-	    /* Destination is a scalar etc */
-	    set_obj = ucl_object_fromstring_common(data, 0,
-		UCL_STRING_PARSE);
-	} else {
-	    /* Destination is an Object or Array */
-	    set_obj = parse_string(setparser, data);
-	}
+	set_obj = parse_string(setparser, data);
     }
 
     if (debug > 0) {

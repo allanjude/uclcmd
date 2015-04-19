@@ -26,6 +26,11 @@
  * $FreeBSD$
  */
 
+/*
+ * I'll just leave this here for you
+ * http://abstrusegoose.com/432
+ */
+
 #ifndef UCLCMD_H_
 #define UCLCMD_H_
 
@@ -48,6 +53,7 @@ extern struct ucl_parser *parser;
 extern struct ucl_parser *setparser;
 extern char input_sepchar;
 extern char output_sepchar;
+extern char *include_file;
 
 typedef int (*verb_func_t)(int argc, char *argv[]);
 
