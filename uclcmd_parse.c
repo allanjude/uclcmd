@@ -59,21 +59,23 @@ parse_input(struct ucl_parser *parser, FILE *source)
     unsigned char inbuf[8192];
     int r = 0;
     ucl_object_t *obj = NULL;
+    bool success = false;
 
     while (!feof(source) && r < (int)sizeof(inbuf)) {
 	r += fread(inbuf + r, 1, sizeof(inbuf) - r, source);
     }
-    ucl_parser_add_chunk(parser, inbuf, r);
+    success = ucl_parser_add_chunk(parser, inbuf, r);
     fclose(source);
 
-    if (ucl_parser_get_error(parser)) {
-	fprintf(stderr, "Error occured: %s\n",
-	    ucl_parser_get_error(parser));
-	cleanup();
-	exit(2);
+    if (success == false) {
+	/* There must be a better way to detect a string */
+	ucl_parser_clear_error(parser);
+	success = true;
+	obj = ucl_object_fromstring_common(data, 0, UCL_STRING_PARSE);
+    } else {
+	obj = ucl_parser_get_object(parser);
     }
 
-    obj = ucl_parser_get_object(parser);
     if (ucl_parser_get_error(parser)) {
 	fprintf(stderr, "Error: Parse Error occured: %s\n",
 	    ucl_parser_get_error(parser));
@@ -88,7 +90,7 @@ ucl_object_t*
 parse_string(struct ucl_parser *parser, char *data)
 {
     ucl_object_t *obj = NULL;
-    int success = 0;
+    bool success = false;
 
     success = ucl_parser_add_string(parser, data, 0);
     if (success == false) {
