@@ -177,14 +177,7 @@ set_mode(char *destination_node, char *data)
 	set_obj = parse_input(setparser, stdin);
     } else {
 	/* User provided data inline */
-	if (ucl_object_type(sub_obj) != UCL_OBJECT && ucl_object_type(sub_obj) != UCL_ARRAY) {
-	    /* Destination is a scalar etc */
-	    set_obj = ucl_object_fromstring_common(data, 0,
-		UCL_STRING_PARSE);
-	} else {
-	    /* Destination is an Object or Array */
-	    set_obj = parse_string(setparser, data);
-	}
+	set_obj = parse_string(setparser, data);
     }
 
     if (debug > 0) {
