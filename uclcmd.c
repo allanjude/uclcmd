@@ -47,6 +47,9 @@ char output_sepchar = '.';
 /*
  * This application provides a shell scripting friendly interface for reading
  * and writing UCL config files, using libUCL.
+ *
+ * http://xkcd.com/1513/
+ *
  */
 int
 main(int argc, char *argv[])
@@ -100,7 +103,7 @@ usage()
 {
     fprintf(stderr, "%s\n",
 "Usage: uclcmd get [-cdejklnquy] [-D char] [-f filename] variable\n"
-"       uclcmd set [-cdjuy] [-D char] [-f filename] variable UCL\n"
+"       uclcmd set [-cdjuy] [-D char] [-f filename] [-i filename] variable [UCL]\n"
 "       uclcmd merge [-cdjuy] [-D char] [-f filename] [-i filename] variable\n"
 "       uclcmd remove [-cdjuy] [-D char] [-f filename] variable\n"
 "\n"
