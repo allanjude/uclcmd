@@ -12,6 +12,7 @@ for test_in in tests/*.in; do
 			res=$(diff -u tests/$(basename $test_cmd .cmd).res test.out)
 			if [ $? -gt 0 ]; then
 				echo Test[$(basename $test_cmd .cmd)] Failed. did not match.
+				echo "$res"
 				fail=$(( $fail + 1 ))
 			else
 				echo Test[$(basename $test_cmd .cmd)] Passed.

@@ -1,0 +1,13 @@
+rootkey {
+	subkey {
+		key = overwrite
+		mergekey = new
+	}
+	array = [ d, e, f, [ 1, 2, 3 ] ]
+	newarray = [ apple, orange ]
+}
+newroot {
+	subkey {
+		key = new
+	}
+}
