@@ -158,6 +158,7 @@ merge_mode(char *destination_node, char *data)
     ucl_object_t *dst_obj = NULL;
     ucl_object_t *sub_obj = NULL;
     ucl_object_t *old_obj = NULL;
+    ucl_object_t *tmp_obj = NULL;
     int success = 0;
 
     setparser = ucl_parser_new(UCL_PARSER_KEY_LOWERCASE |
@@ -204,6 +205,12 @@ merge_mode(char *destination_node, char *data)
 		sub_obj->len, set_obj->len);
 	}
 	success = ucl_array_merge(sub_obj, set_obj, false);
+    } else if (ucl_object_type(sub_obj) == UCL_ARRAY) {
+	if (debug > 0) {
+	    fprintf(stderr, "Appending object to array of size %u\n",
+		sub_obj->len);
+	}
+	success = ucl_array_append(sub_obj, ucl_object_ref(set_obj));
     } else if (ucl_object_type(sub_obj) == UCL_OBJECT && ucl_object_type(set_obj) == UCL_OBJECT) {
 	if (debug > 0) {
 	    fprintf(stderr, "Merging object %s with object %s\n",
@@ -212,34 +219,39 @@ merge_mode(char *destination_node, char *data)
 	/* XXX not supported:
 	 * success = ucl_object_merge(sub_obj, set_obj, false, true);
 	 */
+	
+	/* Old non-recursive way */
+	/*
 	success = ucl_object_merge(sub_obj, set_obj, false);
-    } else if (ucl_object_type(sub_obj) == UCL_ARRAY) {
-	if (debug > 0) {
-	    fprintf(stderr, "Appending object to array of size %u\n",
-		sub_obj->len);
-	}
-	success = ucl_array_append(sub_obj, ucl_object_ref(set_obj));
-    } else if (ucl_object_type(sub_obj) != UCL_OBJECT && ucl_object_type(sub_obj) != UCL_ARRAY &&
-	    ucl_object_type(set_obj) != UCL_OBJECT && ucl_object_type(set_obj) != UCL_ARRAY) {
+	*/
+	success = merge_recursive(sub_obj, set_obj, false);
+    } else if (ucl_object_type(sub_obj) != UCL_OBJECT && ucl_object_type(sub_obj) != UCL_ARRAY) {
 	/* Create an explicit array */
 	if (debug > 0) {
 	    fprintf(stderr, "Creating an array and appended the new item\n");
 	}
-	old_obj = ucl_object_typed_new(UCL_ARRAY);
+	tmp_obj = ucl_object_typed_new(UCL_ARRAY);
 	/*
 	 * Reference and Append the original scalar
 	 * The additional reference is required because the old object will be
 	 * unreferenced as part of the ucl_object_replace_key operation
 	 */
-	ucl_array_append(old_obj, ucl_object_ref(sub_obj));
+	ucl_array_append(tmp_obj, ucl_object_ref(sub_obj));
 	/* Reference and Append the new scalar (unref in cleanup()) */
-	ucl_array_append(old_obj, ucl_object_ref(set_obj));
+	ucl_array_append(tmp_obj, ucl_object_ref(set_obj));
 	/* Replace the old object with the newly created one */
-	success = ucl_object_replace_key(dst_obj, old_obj,
-	    ucl_object_key(sub_obj), 0, true);
-    } else if (ucl_object_type(dst_obj) == UCL_OBJECT && ucl_object_type(set_obj) != UCL_OBJECT
-	    && ucl_object_type(set_obj) != UCL_ARRAY) {
-	printf("Not implemented yet\n");
+	if (ucl_object_type(dst_obj) == UCL_ARRAY) {
+	    old_obj = ucl_array_replace_index(dst_obj, tmp_obj,
+		ucl_array_index_of(dst_obj, sub_obj));
+	    success = false;
+	    if (old_obj != NULL) {
+		ucl_object_unref(old_obj);
+		success = true;
+	    }
+	} else {
+	    success = ucl_object_replace_key(dst_obj, tmp_obj,
+		ucl_object_key(sub_obj), 0, true);
+	}
     } else {
 	if (debug > 0) {
 	    fprintf(stderr, "Merging object into key %s\n",
@@ -247,6 +259,86 @@ merge_mode(char *destination_node, char *data)
 	}
 	success = ucl_object_insert_key_merged(dst_obj, ucl_object_ref(set_obj),
 	    ucl_object_key(sub_obj), 0, true);
+    }
+
+    return success;
+}
+
+bool
+merge_recursive(ucl_object_t *top, ucl_object_t *elt, bool copy)
+{
+    const ucl_object_t *cur;
+    ucl_object_iter_t it = NULL;
+    ucl_object_t *found = NULL, *cp_obj = NULL;
+    bool success = false;
+
+    it = ucl_object_iterate_new(elt);
+
+    while ((cur = ucl_object_iterate_safe(it, false))) {
+	cp_obj = ucl_object_ref(cur);
+	if (debug > 0) {
+	    fprintf(stderr, "DEBUG: Looping over (elt)%s, found key: %s\n",
+		ucl_object_key(top), ucl_object_key(cur));
+	}
+	if (ucl_object_type(cur) == UCL_OBJECT) {
+	    found = __DECONST(ucl_object_t *, ucl_object_find_key(top, ucl_object_key(cur)));
+	    if (found == NULL) {
+		/* new key not found in old object, insert it */
+		if (debug > 0) {
+		    fprintf(stderr, "DEBUG: unmatched key, inserting: %s into top\n",
+			ucl_object_key(cur));
+		}
+		success = ucl_object_insert_key_merged(top, cp_obj,
+		    ucl_object_key(cp_obj), 0, true);
+		if (success == false) { return false; }
+		continue;
+	    }
+	    if (debug > 0) {
+		fprintf(stderr, "DEBUG: Found key %s in (top)%s too, merging...\n",
+		    ucl_object_key(found), ucl_object_key(top));
+	    }
+	    success = merge_recursive(found, cp_obj, copy);
+	    if (success == false) { return false; }
+	} else if (ucl_object_type(cur) == UCL_ARRAY) {
+	    found = __DECONST(ucl_object_t *, ucl_object_find_key(top, ucl_object_key(cur)));
+	    if (found == NULL) {
+		/* new key not found in old object, insert it */
+		if (debug > 0) {
+		    fprintf(stderr, "DEBUG: unmatched key, inserting: %s into top\n",
+			ucl_object_key(cur));
+		}
+		success = ucl_object_insert_key_merged(top, cp_obj,
+		    ucl_object_key(cp_obj), 0, true);
+		if (success == false) { return false; }
+		continue;
+	    }
+	    if (debug > 0) {
+		fprintf(stderr, "DEBUG: Found key %s in (top)%s too, merging...\n",
+		    ucl_object_key(found), ucl_object_key(top));
+	    }
+	    success = ucl_array_merge(found, cp_obj, false);
+	    if (success == false) { return false; }
+	} else {
+	    found = __DECONST(ucl_object_t *, ucl_object_find_key(top, ucl_object_key(cur)));
+	    if (found == NULL) {
+		/* new key not found in old object, insert it */
+		if (debug > 0) {
+		    fprintf(stderr, "DEBUG: inserting %s into %s\n",
+			ucl_object_key(cur), ucl_object_key(top));
+		}
+		success = ucl_object_insert_key_merged(top, ucl_object_ref(cur),
+		    ucl_object_key(cur), 0, true);
+		if (success == false) { return false; }
+		continue;
+	    }
+	    if (debug > 0) {
+		fprintf(stderr, "DEBUG: replacing %s in %s\n",
+		    ucl_object_key(found), ucl_object_key(top));
+	    }
+	    success = ucl_object_replace_key(top, cp_obj,
+		ucl_object_key(cp_obj), 0, true);
+	    if (success == false) { return false; }
+	}
     }
 
     return success;

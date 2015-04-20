@@ -70,6 +70,7 @@ ucl_object_t* get_object(char *selected_node);
 ucl_object_t* get_parent(char *selected_node);
 int merge_main(int argc, char *argv[]);
 int merge_mode(char *destination_node, char *data);
+bool merge_recursive(ucl_object_t *top, ucl_object_t *elt, bool copy);
 void output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey);
 int output_main(int argc, char *argv[]);
 void output_key(const ucl_object_t *obj, char *nodepath, const char *inkey);
