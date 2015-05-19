@@ -204,7 +204,7 @@ merge_mode(char *destination_node, char *data)
 	    fprintf(stderr, "Merging array of size %u with array of size %u\n",
 		sub_obj->len, set_obj->len);
 	}
-	success = ucl_array_merge(sub_obj, set_obj, false);
+	success = ucl_array_merge(sub_obj, set_obj, true);
     } else if (ucl_object_type(sub_obj) == UCL_ARRAY) {
 	if (debug > 0) {
 	    fprintf(stderr, "Appending object to array of size %u\n",
@@ -294,7 +294,7 @@ merge_recursive(ucl_object_t *top, ucl_object_t *elt, bool copy)
 		continue;
 	    }
 	    if (debug > 0) {
-		fprintf(stderr, "DEBUG: Found key %s in (top)%s too, merging...\n",
+		fprintf(stderr, "DEBUG: (obj) Found key %s in (top)%s too, merging...\n",
 		    ucl_object_key(found), ucl_object_key(top));
 	    }
 	    success = merge_recursive(found, cp_obj, copy);
@@ -313,10 +313,10 @@ merge_recursive(ucl_object_t *top, ucl_object_t *elt, bool copy)
 		continue;
 	    }
 	    if (debug > 0) {
-		fprintf(stderr, "DEBUG: Found key %s in (top)%s too, merging...\n",
+		fprintf(stderr, "DEBUG: (arr) Found key %s in (top)%s too, merging...\n",
 		    ucl_object_key(found), ucl_object_key(top));
 	    }
-	    success = ucl_array_merge(found, cp_obj, false);
+	    success = ucl_array_merge(found, cp_obj, true);
 	    if (success == false) { return false; }
 	} else {
 	    found = __DECONST(ucl_object_t *, ucl_object_find_key(top, ucl_object_key(cur)));
