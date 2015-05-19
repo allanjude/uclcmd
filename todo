@@ -14,5 +14,3 @@
 - include an entire file as a value (motd)
 - etc/defaults ucl.rules (motd)
 
-
-bug: guest.features|each|values

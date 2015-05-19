@@ -394,10 +394,10 @@ get_cmd_values(const ucl_object_t *obj, char *nodepath,
     ucl_object_iter_t it = NULL;
     const ucl_object_t *cur;
     int loopcount = 0, arrindex = 0;
+    char *newkey = NULL;
 
     if (obj != NULL) {
 	while ((cur = ucl_iterate_object(obj, &it, true))) {
-	    char *newkey = NULL;
 	    if (cur == NULL) {
 		continue;
 	    }
@@ -405,11 +405,15 @@ get_cmd_values(const ucl_object_t *obj, char *nodepath,
 		asprintf(&newkey, "%c%i", output_sepchar, arrindex);
 		arrindex++;
 	    } else {
-		asprintf(&newkey, "%c%s", output_sepchar, ucl_object_key(cur));
+		newkey = __DECONST(char *, ucl_object_key(cur));
+		if (newkey != NULL) {
+		    asprintf(&newkey, "%c%s", output_sepchar, ucl_object_key(cur));
+		}
 	    }
 	    output_key(cur, nodepath, newkey);
 	    loopcount++;
 	    free(newkey);
+	    newkey = NULL;
 	}
     }
     if (loopcount == 0 && debug > 0) {
