@@ -167,7 +167,13 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
 void
 output_key(const ucl_object_t *obj, char *nodepath, const char *inkey)
 {
-    char *key = strdup(inkey);
+    char *key;
+
+    if (inkey == NULL) {
+	asprintf(&key, "");
+    } else {
+	key = strdup(inkey);
+    }
 
     replace_sep(nodepath, input_sepchar, output_sepchar);
     replace_sep(key, input_sepchar, output_sepchar);
@@ -285,74 +291,6 @@ ucl_obj_dump(const ucl_object_t *obj, unsigned int shift)
 {
     int num = shift * 2 + 5;
     char *pre = (char *) malloc (num * sizeof(char));
-    const ucl_object_t *cur, *tmp;
-    ucl_object_iter_t it = NULL, it_obj = NULL;
-
-    pre[--num] = 0x00;
-    while (num--)
-	    pre[num] = 0x20;
-
-    tmp = obj;
-
-    while ((obj = ucl_iterate_object (tmp, &it, false))) {
-	printf ("%sucl object address: %p\n", pre + 4, obj);
-	if (obj->key != NULL) {
-	    printf ("%skey: \"%s\"\n", pre, ucl_object_key (obj));
-	}
-	printf ("%sref: %u\n", pre, obj->ref);
-	printf ("%slen: %u\n", pre, obj->len);
-	printf ("%sprev: %p\n", pre, obj->prev);
-	printf ("%snext: %p\n", pre, obj->next);
-	if (ucl_object_type(obj) == UCL_OBJECT) {
-	    printf ("%stype: UCL_OBJECT\n", pre);
-	    printf ("%svalue: %p\n", pre, obj->value.ov);
-	    it_obj = NULL;
-	    while ((cur = ucl_iterate_object (obj, &it_obj, true))) {
-		ucl_obj_dump (cur, shift + 2);
-	    }
-	}
-	else if (ucl_object_type(obj) == UCL_ARRAY) {
-	    printf ("%stype: UCL_ARRAY\n", pre);
-	    printf ("%svalue: %p\n", pre, obj->value.av);
-	    it_obj = NULL;
-	    while ((cur = ucl_iterate_object (obj, &it_obj, true))) {
-		ucl_obj_dump (cur, shift + 2);
-	    }
-	}
-	else if (ucl_object_type(obj) == UCL_INT) {
-	    printf ("%stype: UCL_INT\n", pre);
-	    printf ("%svalue: %jd\n", pre, (intmax_t)ucl_object_toint (obj));
-	}
-	else if (ucl_object_type(obj) == UCL_FLOAT) {
-	    printf ("%stype: UCL_FLOAT\n", pre);
-	    printf ("%svalue: %f\n", pre, ucl_object_todouble (obj));
-	}
-	else if (ucl_object_type(obj) == UCL_STRING) {
-	    printf ("%stype: UCL_STRING\n", pre);
-	    printf ("%svalue: \"%s\"\n", pre, ucl_object_tostring (obj));
-	}
-	else if (ucl_object_type(obj) == UCL_BOOLEAN) {
-	    printf ("%stype: UCL_BOOLEAN\n", pre);
-	    printf ("%svalue: %s\n", pre, ucl_object_tostring_forced (obj));
-	}
-	else if (ucl_object_type(obj) == UCL_TIME) {
-	    printf ("%stype: UCL_TIME\n", pre);
-	    printf ("%svalue: %f\n", pre, ucl_object_todouble (obj));
-	}
-	else if (ucl_object_type(obj) == UCL_USERDATA) {
-	    printf ("%stype: UCL_USERDATA\n", pre);
-	    printf ("%svalue: %p\n", pre, obj->value.ud);
-	}
-    }
-
-    free (pre);
-}
-
-void
-ucl_obj_dump_safe(const ucl_object_t *obj, unsigned int shift)
-{
-    int num = shift * 2 + 5;
-    char *pre = (char *) malloc (num * sizeof(char));
     const ucl_object_t *cur, *cur2;
     ucl_object_iter_t it = NULL, it2 = NULL;
 
@@ -372,6 +310,8 @@ ucl_obj_dump_safe(const ucl_object_t *obj, unsigned int shift)
 	printf ("%slen: %u\n", pre, cur->len);
 	printf ("%sprev: %p\n", pre, cur->prev);
 	printf ("%snext: %p\n", pre, cur->next);
+	printf ("%spriority: %d\n", pre, (cur->flags >> ((sizeof (cur->flags) * 8) - 4)));
+	printf ("%sflags: %x\n", pre, (cur->flags & 0xfff));
 	if (ucl_object_type(cur) == UCL_OBJECT) {
 	    printf ("%stype: UCL_OBJECT\n", pre);
 	    printf ("%svalue: %p\n", pre, cur->value.ov);
