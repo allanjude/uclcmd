@@ -14,3 +14,8 @@
 - include an entire file as a value (motd)
 - etc/defaults ucl.rules (motd)
 
+
+
+.disable
+.delete
+.merge=error|replace|merge|append
