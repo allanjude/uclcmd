@@ -45,7 +45,7 @@
 #endif
 
 extern int debug, expand, nonewline, show_keys, show_raw;
-extern bool firstline;
+extern bool firstline, shvars;
 extern int output_type;
 extern ucl_object_t *root_obj;
 extern ucl_object_t *set_obj;

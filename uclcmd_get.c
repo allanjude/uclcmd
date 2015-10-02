@@ -98,6 +98,7 @@ get_main(int argc, char *argv[])
 	    show_keys = 1;
 	    break;
 	case 'l':
+ 	    shvars = true;
 	    output_sepchar = '_';
 	    break;
 	case 'n':
