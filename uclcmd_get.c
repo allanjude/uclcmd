@@ -136,8 +136,6 @@ get_main(int argc, char *argv[])
 	get_mode(argv[k]);
     }
 
-    cleanup();
-
     if (nonewline) {
 	printf("\n");
     }

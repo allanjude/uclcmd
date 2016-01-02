@@ -144,8 +144,6 @@ set_main(int argc, char *argv[])
 	ret = 1;
     }
 
-    cleanup();
-
     if (nonewline) {
 	printf("\n");
     }
