@@ -104,6 +104,6 @@ int get_cmd_type(const ucl_object_t *obj, char *nodepath,
     const char *command_str, char *remaining_commands, int recurse);
 int get_cmd_values(const ucl_object_t *obj, char *nodepath,
     const char *command_str, char *remaining_commands, int recurse);
-
+void asprintf_check_enomem(int retcode);
 
 #endif /* UCLCMD_H_ */
