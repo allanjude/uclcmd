@@ -173,7 +173,7 @@ output_key(const ucl_object_t *obj, char *nodepath, const char *inkey)
     char *key;
 
     if (inkey == NULL) {
-	asprintf(&key, "");
+	key = "";
     } else {
 	key = strdup(inkey);
     }

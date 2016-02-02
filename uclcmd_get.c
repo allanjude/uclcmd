@@ -152,10 +152,9 @@ get_mode(char *requested_node)
     char *cmd = requested_node;
     char *node_name = strsep(&cmd, "|");
     char *command_str = strsep(&cmd, "|");
-    char *nodepath = NULL;
+    char *nodepath = "";
     int command_count = 0, i;
 
-    asprintf(&nodepath, "");
     found_object = root_obj;
 
     if (strlen(node_name) == 0) {
@@ -180,7 +179,7 @@ get_mode(char *requested_node)
 	}
 	found_object = ucl_lookup_path_char(found_object, node_name, input_sepchar);
 	free(nodepath);
-	asprintf(&nodepath, "%s", node_name);
+	asprintf_check_enomem(asprintf(&nodepath, "%s", node_name));
     }
 
     while (command_str != NULL) {
@@ -403,12 +402,12 @@ get_cmd_values(const ucl_object_t *obj, char *nodepath,
 		continue;
 	    }
 	    if (ucl_object_type(obj) == UCL_ARRAY) {
-		asprintf(&newkey, "%c%i", output_sepchar, arrindex);
+		asprintf_check_enomem(asprintf(&newkey, "%c%i", output_sepchar, arrindex));
 		arrindex++;
 	    } else {
 		newkey = __DECONST(char *, ucl_object_key(cur));
 		if (newkey != NULL) {
-		    asprintf(&newkey, "%c%s", output_sepchar, ucl_object_key(cur));
+		    asprintf_check_enomem(asprintf(&newkey, "%c%s", output_sepchar, ucl_object_key(cur)));
 		}
 	    }
 	    output_key(cur, nodepath, newkey);
@@ -482,7 +481,7 @@ get_cmd_recurse(const ucl_object_t *obj, char *nodepath,
 	    ucl_object_t *arrlen = NULL;
 
 	    arrlen = ucl_object_fromint(obj->len);
-	    asprintf(&tmpkeyname, "%c%s", output_sepchar, "_length");
+	    asprintf_check_enomem(asprintf(&tmpkeyname, "%c%s", output_sepchar, "_length"));
 	    output_chunk(arrlen, nodepath, tmpkeyname);
 	    free(tmpkeyname);
 	}
@@ -494,7 +493,7 @@ get_cmd_recurse(const ucl_object_t *obj, char *nodepath,
 	keylist = expand_subkeys(obj, nodepath);
 	if (keylist != NULL) {
 	    keystr = ucl_object_fromstring(keylist);
-	    asprintf(&tmpkeyname, "%c%s", output_sepchar, "_keys");
+	    asprintf_check_enomem(asprintf(&tmpkeyname, "%c%s", output_sepchar, "_keys"));
 	    output_chunk(keystr, nodepath, tmpkeyname);
 	    free(tmpkeyname);
 	    free(keylist);
@@ -505,24 +504,24 @@ get_cmd_recurse(const ucl_object_t *obj, char *nodepath,
 	char *newkey = NULL;
 	char *newnodepath = NULL;
 	if (ucl_object_type(obj) == UCL_ARRAY) {
-	    asprintf(&newkey, "%c%i", output_sepchar, arrindex);
+	    asprintf_check_enomem(asprintf(&newkey, "%c%i", output_sepchar, arrindex));
 	    arrindex++;
 	} else if (strlen(nodepath) == 0) {
 	    asprintf(&newkey, "%s", ucl_object_key(cur));
 	} else {
-	    asprintf(&newkey, "%c%s", output_sepchar, ucl_object_key(cur));
+	    asprintf_check_enomem(asprintf(&newkey, "%c%s", output_sepchar, ucl_object_key(cur)));
 	}
 	if (ucl_object_type(cur) == UCL_OBJECT ||
 		ucl_object_type(cur) == UCL_ARRAY) {
 	    it2 = NULL;
 	    while ((cur2 = ucl_iterate_object(cur, &it2, false))) {
 		if (nodepath != NULL && strlen(nodepath) > 0) {
-		    asprintf(&newnodepath, "%s%s", nodepath, newkey);
+		    asprintf_check_enomem(asprintf(&newnodepath, "%s%s", nodepath, newkey));
 		} else {
 		    if (ucl_object_type(obj) == UCL_ARRAY) {
-			asprintf(&newnodepath, "%i", arrindex);
+			asprintf_check_enomem(asprintf(&newnodepath, "%i", arrindex));
 		    } else {
-			asprintf(&newnodepath, "%s", ucl_object_key(cur2));
+			asprintf_check_enomem(asprintf(&newnodepath, "%s", ucl_object_key(cur2)));
 		    }
 		}
 		recurse_level = process_get_command(cur2,
@@ -560,10 +559,10 @@ get_cmd_each(const ucl_object_t *obj, char *nodepath,
 	while ((cur = ucl_iterate_object(obj, &it, true))) {
 	    char *newkey = NULL;
 	    if (ucl_object_type(obj) == UCL_ARRAY) {
-		asprintf(&newkey, "%c%i", output_sepchar, arrindex);
+		asprintf_check_enomem(asprintf(&newkey, "%c%i", output_sepchar, arrindex));
 		arrindex++;
 	    } else {
-		asprintf(&newkey, "%c%s", output_sepchar, ucl_object_key(cur));
+		asprintf_check_enomem(asprintf(&newkey, "%c%s", output_sepchar, ucl_object_key(cur)));
 	    }
 	    if (cur->next != 0 && cur->type != UCL_ARRAY) {
 		/* Implicit array */
@@ -586,12 +585,12 @@ get_cmd_each(const ucl_object_t *obj, char *nodepath,
 	    while ((cur = ucl_iterate_object(obj, &it, true))) {
 		char *newnodepath = NULL;
 		if (ucl_object_type(obj) == UCL_ARRAY) {
-		    asprintf(&newnodepath, "%s%c%i", nodepath, output_sepchar,
-			arrindex);
+		    asprintf_check_enomem(asprintf(&newnodepath, "%s%c%i", nodepath, output_sepchar,
+			arrindex));
 		    arrindex++;
 		} else {
-		    asprintf(&newnodepath, "%s%c%s", nodepath, output_sepchar,
-			ucl_object_key(cur));
+		    asprintf_check_enomem(asprintf(&newnodepath, "%s%c%s", nodepath, output_sepchar,
+			ucl_object_key(cur)));
 		}
 		if (cur->next != 0 && cur->type != UCL_ARRAY) {
 		    /* Implicit array */
@@ -648,12 +647,12 @@ get_cmd_none(const ucl_object_t *obj, char *nodepath,
 	    if (next_command != NULL) {
 		char *newnodepath = NULL;
 		if (ucl_object_type(obj) == UCL_ARRAY) {
-		    asprintf(&newnodepath, "%s%c%i", nodepath, output_sepchar,
-			arrindex);
+		    asprintf_check_enomem(asprintf(&newnodepath, "%s%c%i", nodepath, output_sepchar,
+			arrindex));
 		    arrindex++;
 		} else {
-		    asprintf(&newnodepath, "%s%c%s", nodepath, output_sepchar,
-			ucl_object_key(cur));
+		    asprintf_check_enomem(asprintf(&newnodepath, "%s%c%s", nodepath, output_sepchar,
+			ucl_object_key(cur)));
 		}
 		if (debug > 2) {
 		    fprintf(stderr, "DEBUG: Calling recurse with %s.%s on %s\n",
