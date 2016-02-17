@@ -118,7 +118,7 @@ usage()
 "       -k --keys       show key=value rather than just the value\n"
 "       -l --shellvars  keys are output with underscores as delimiter\n"
 "       -n --nonewline  separate output with spaces rather than newlines\n"
-"       -q --noquote    do not enclose strings in quotes\n"
+"       -q --noquotes   do not enclose strings in quotes\n"
 "       -u --ucl        output universal config language\n"
 "       -y --yaml       output YAML\n"
 "       variable        The key of the variable to read, in object notation\n"

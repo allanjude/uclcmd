@@ -52,7 +52,7 @@ remove_main(int argc, char *argv[])
 	    UCL_EMIT_JSON },
 	{ "keys",	no_argument,		&show_keys,	1 },
 	{ "nonewline",	no_argument,		&nonewline,	1 },
-	{ "noquote",	no_argument,		&show_raw,	1 },
+	{ "noquotes",	no_argument,		&show_raw,	1 },
 	{ "shellvars",	no_argument,		NULL,		'l' },
 	{ "ucl",	no_argument,		&output_type,
 	    UCL_EMIT_CONFIG },
