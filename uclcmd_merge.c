@@ -36,8 +36,7 @@ merge_main(int argc, char *argv[])
     bool success = false;
 
     /* Initialize parser */
-    parser = ucl_parser_new(UCL_PARSER_KEY_LOWERCASE |
-        UCL_PARSER_NO_IMPLICIT_ARRAYS);
+    parser = ucl_parser_new(UCLCMD_PARSER_FLAGS);
 
     /*	options	descriptor */
     static struct option longopts[] = {
