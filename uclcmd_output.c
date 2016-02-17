@@ -75,8 +75,6 @@ output_main(int argc, char *argv[])
 
     ucl_obj_dump(root_obj, 0);
 
-    cleanup();
-
     if (nonewline) {
 	printf("\n");
     }

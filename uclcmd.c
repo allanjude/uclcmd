@@ -55,6 +55,7 @@ char *include_file = NULL;
 int
 main(int argc, char *argv[])
 {
+    atexit(cleanup);
     int ret = 0, i = 0;
     bool verbfound = false;
     verbmap_t cmdmap[] =
@@ -163,4 +164,3 @@ cleanup()
 	ucl_object_unref(set_obj);
     }
 }
-

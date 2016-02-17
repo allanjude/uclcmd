@@ -32,15 +32,17 @@
 
 void
 asprintf_check_enomem(int retcode) {
-	/* 
-	 * This method is called with the return code of asprintf() as parameter.
-	 * asprintf returns -1 when it cannot allocate memory.
-	 * See printf(3) for details.
-	 */
-	if (retcode != -1)
-		return;
-	fprintf(stderr, "ENOMEM(%d): Could not allocate memory.\n", ENOMEM);
-	abort();	
+    /* 
+     * This method is called with the return code of asprintf() as parameter.
+     * asprintf returns -1 when it cannot allocate memory.
+     * See printf(3) for details.
+     */
+    if (retcode != -1)
+        return;
+    errno = ENOMEM;
+    fprintf(stderr, "ENOMEM(%d): Could not allocate memory.\n", ENOMEM);
+	cleanup();
+    abort();
 }
 
 char*

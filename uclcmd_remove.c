@@ -178,8 +178,6 @@ remove_main(int argc, char *argv[])
     }
     get_mode("");
 
-    cleanup();
-
     if (nonewline) {
 	printf("\n");
     }

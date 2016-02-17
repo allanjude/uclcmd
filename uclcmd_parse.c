@@ -38,7 +38,6 @@ parse_file(struct ucl_parser *parser, const char *filename)
     if (ucl_parser_get_error(parser)) {
 	fprintf(stderr, "Error occured: %s\n",
 	    ucl_parser_get_error(parser));
-	cleanup();
 	exit(2);
     }
 
@@ -46,7 +45,6 @@ parse_file(struct ucl_parser *parser, const char *filename)
     if (ucl_parser_get_error(parser)) {
 	fprintf(stderr, "Error: Parse Error occured: %s\n",
 	    ucl_parser_get_error(parser));
-	cleanup();
 	exit(3);
     }
 
@@ -81,7 +79,6 @@ parse_input(struct ucl_parser *parser, FILE *source)
     if (ucl_parser_get_error(parser)) {
 	fprintf(stderr, "Error: Parse Error occured: %s\n",
 	    ucl_parser_get_error(parser));
-	cleanup();
 	exit(3);
     }
 
@@ -107,7 +104,6 @@ parse_string(struct ucl_parser *parser, char *data)
     if (ucl_parser_get_error(parser)) {
 	fprintf(stderr, "Error: Parse Error occured: %s\n",
 	    ucl_parser_get_error(parser));
-	cleanup();
 	exit(3);
     }
 
