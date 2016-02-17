@@ -72,7 +72,7 @@ parse_input(struct ucl_parser *parser, FILE *source)
 	/* There must be a better way to detect a string */
 	ucl_parser_clear_error(parser);
 	success = true;
-	asprintf_check_enomem(asprintf(&data, "%s", inbuf));
+	uclcmd_asprintf(&data, "%s", inbuf);
 	obj = ucl_object_fromstring_common(data, 0, UCL_STRING_PARSE);
     } else {
 	obj = ucl_parser_get_object(parser);

@@ -30,17 +30,26 @@
 
 #include "uclcmd.h"
 
+/* 
+ * This method is called with the arguments of asprintf() as parameter.
+ * It handles error checking all instances of asprintf()
+ * asprintf returns -1 when it cannot allocate memory.
+ */
 void
-asprintf_check_enomem(int retcode) {
-	/* 
-	 * This method is called with the return code of asprintf() as parameter.
-	 * asprintf returns -1 when it cannot allocate memory.
-	 * See printf(3) for details.
-	 */
-	if (retcode != -1)
+uclcmd_asprintf(char ** __restrict s, char const * __restrict fmt, ...)
+{
+	int retcode;
+	va_list ap;
+
+	va_start(ap, fmt);
+	retcode = vasprintf(s, fmt, ap);
+	va_end(ap);
+
+	if (retcode != -1) {
 		return;
+	}
 	fprintf(stderr, "ENOMEM(%d): Could not allocate memory.\n", ENOMEM);
-	abort();	
+	abort();
 }
 
 char*
@@ -185,31 +194,31 @@ type_as_string (const ucl_object_t *obj)
     if (obj == NULL) {
 	return NULL;
     } else if (ucl_object_type(obj) == UCL_OBJECT) {
-	asprintf_check_enomem(asprintf(&ret, "UCL_OBJECT"));
+	uclcmd_asprintf(&ret, "UCL_OBJECT");
     }
     else if (ucl_object_type(obj) == UCL_ARRAY) {
-	asprintf_check_enomem(asprintf(&ret, "UCL_ARRAY"));
+	uclcmd_asprintf(&ret, "UCL_ARRAY");
     }
     else if (ucl_object_type(obj) == UCL_INT) {
-	asprintf_check_enomem(asprintf(&ret, "UCL_INT"));
+	uclcmd_asprintf(&ret, "UCL_INT");
     }
     else if (ucl_object_type(obj) == UCL_FLOAT) {
-	asprintf_check_enomem(asprintf(&ret, "UCL_FLOAT"));
+	uclcmd_asprintf(&ret, "UCL_FLOAT");
     }
     else if (ucl_object_type(obj) == UCL_STRING) {
-	asprintf_check_enomem(asprintf(&ret, "UCL_STRING"));
+	uclcmd_asprintf(&ret, "UCL_STRING");
     }
     else if (ucl_object_type(obj) == UCL_BOOLEAN) {
-	asprintf_check_enomem(asprintf(&ret, "UCL_BOOLEAN"));
+	uclcmd_asprintf(&ret, "UCL_BOOLEAN");
     }
     else if (ucl_object_type(obj) == UCL_TIME) {
-	asprintf_check_enomem(asprintf(&ret, "UCL_TIME"));
+	uclcmd_asprintf(&ret, "UCL_TIME");
     }
     else if (ucl_object_type(obj) == UCL_USERDATA) {
-	asprintf_check_enomem(asprintf(&ret, "UCL_USERDATA"));
+	uclcmd_asprintf(&ret, "UCL_USERDATA");
     }
     else if (ucl_object_type(obj) == UCL_NULL) {
-	asprintf_check_enomem(asprintf(&ret, "UCL_NULL"));
+	uclcmd_asprintf(&ret, "UCL_NULL");
     }
 
     return ret;
