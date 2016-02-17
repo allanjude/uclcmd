@@ -159,8 +159,8 @@ get_mode(char *requested_node)
     char *nodepath = NULL;
     int command_count = 0, i = 0;
 
-	uclcmd_asprintf(&nodepath, "");
-	found_object = root_obj;
+    uclcmd_asprintf(&nodepath, "");
+    found_object = root_obj;
 
     if (strlen(node_name) == 0) {
 	/* Requested root node */
