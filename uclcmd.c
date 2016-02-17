@@ -103,10 +103,10 @@ void
 usage()
 {
     fprintf(stderr, "%s\n",
-"Usage: uclcmd get [-cdejklnquy] [-D char] [-f filename] variable\n"
-"       uclcmd set [-cdjuy] [-D char] [-f filename] [-i filename] variable [UCL]\n"
-"       uclcmd merge [-cdjuy] [-D char] [-f filename] [-i filename] variable\n"
-"       uclcmd remove [-cdjuy] [-D char] [-f filename] variable\n"
+"Usage: uclcmd get [-cdejklmnquy] [-D char] [-f filename] variable\n"
+"       uclcmd set [-cdjmuy] [-D char] [-f filename] [-i filename] variable [UCL]\n"
+"       uclcmd merge [-cdjmuy] [-D char] [-f filename] [-i filename] variable\n"
+"       uclcmd remove [-cdjmuy] [-D char] [-f filename] variable\n"
 "\n"
 "COMMON OPTIONS:\n"
 "       -c --cjson      output compacted JSON\n"
@@ -117,6 +117,7 @@ usage()
 "       -j --json       output pretty JSON\n"
 "       -k --keys       show key=value rather than just the value\n"
 "       -l --shellvars  keys are output with underscores as delimiter\n"
+"       -m --msgpack    output MSGPACK\n"
 "       -n --nonewline  separate output with spaces rather than newlines\n"
 "       -q --noquotes   do not enclose strings in quotes\n"
 "       -u --ucl        output universal config language\n"

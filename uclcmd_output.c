@@ -157,6 +157,21 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
 	    printf("\n");
 	}
 	break;
+    case UCL_EMIT_MSGPACK: /* Msgpack */
+	result = ucl_object_emit(obj, output_type);
+	if (nonewline) {
+	    fprintf(stderr, "WARN: Msgpack output cannot be 'nonewline'd\n");
+	}
+	if (show_keys == 1 && strlen(key) > 0)
+	    printf("%s%s=", nodepath, key);
+	printf("%s", result);
+	free(result);
+	if (nonewline) {
+	    firstline = false;
+	} else {
+	    printf("\n");
+	}
+	break;
     default:
 	fprintf(stderr, "Error: Invalid output mode: %i\n",
 	    output_type);
