@@ -39,9 +39,9 @@ output_main(int argc, char *argv[])
 
     /*	options	descriptor */
     static struct option longopts[] = {
-	{ "file",       required_argument,      NULL,       	'f' },
-	{ "input",    	no_argument,            NULL,  		'i' },
-	{ NULL,         0,                      NULL,       	0 }
+	{ "file",	required_argument,	NULL,		'f' },
+	{ "input",	no_argument,		NULL,		'i' },
+	{ NULL,		0,			NULL,		0 }
     };
 
     while ((ch = getopt_long(argc, argv, "f:i:", longopts, NULL)) != -1) {
@@ -88,6 +88,8 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
 {
     unsigned char *result = NULL;
     char *key = strdup(inkey);
+    ucl_object_t *comments;
+    struct ucl_emitter_functions *func;
 
     if (shvars == true) {
 	replace_sep(nodepath, '.', '_');
@@ -100,7 +102,13 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
 	output_key(obj, nodepath, key);
 	break;
     case UCL_EMIT_CONFIG: /* UCL */
-	result = ucl_object_emit(obj, output_type);
+	comments = ucl_object_ref(ucl_parser_get_comments(parser));
+	result = NULL;
+	func = ucl_object_emit_memory_funcs((void **)&result);
+	if (func != NULL) {
+	    ucl_object_emit_full(obj, output_type, func, comments);
+	    ucl_object_emit_funcs_free(func);
+	}
 	if (nonewline) {
 	    fprintf(stderr, "WARN: UCL output cannot be 'nonewline'd\n");
 	}
