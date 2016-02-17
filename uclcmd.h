@@ -45,7 +45,7 @@
 #endif
 
 extern int debug, expand, nonewline, show_keys, show_raw;
-extern bool firstline;
+extern bool firstline, shvars;
 extern int output_type;
 extern ucl_object_t *root_obj;
 extern ucl_object_t *set_obj;
@@ -104,6 +104,6 @@ int get_cmd_type(const ucl_object_t *obj, char *nodepath,
     const char *command_str, char *remaining_commands, int recurse);
 int get_cmd_values(const ucl_object_t *obj, char *nodepath,
     const char *command_str, char *remaining_commands, int recurse);
-
+void asprintf_check_enomem(int retcode);
 
 #endif /* UCLCMD_H_ */

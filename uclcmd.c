@@ -35,7 +35,7 @@
  */
 
 int debug = 0, expand = 0, mode = 0, nonewline = 0, show_keys = 0, show_raw = 0;
-bool firstline = true;
+bool firstline = true, shvars = false;
 int output_type = 254;
 ucl_object_t *root_obj = NULL;
 ucl_object_t *set_obj = NULL;

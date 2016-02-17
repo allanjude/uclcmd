@@ -90,6 +90,9 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
     unsigned char *result = NULL;
     char *key = strdup(inkey);
 
+    if (shvars == true) {
+	replace_sep(nodepath, '.', '_');
+    }
     replace_sep(nodepath, input_sepchar, output_sepchar);
     replace_sep(key, input_sepchar, output_sepchar);
 
@@ -170,7 +173,7 @@ output_key(const ucl_object_t *obj, char *nodepath, const char *inkey)
     char *key;
 
     if (inkey == NULL) {
-	asprintf(&key, "");
+	key = "";
     } else {
 	key = strdup(inkey);
     }

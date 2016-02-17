@@ -14,3 +14,19 @@
 - include an entire file as a value (motd)
 - etc/defaults ucl.rules (motd)
 
+
+
+.disable
+.delete
+.merge=error|replace|merge|append
+
+
+shell mode replace . with _ in __keys
+support single quotes
+bools as ints
+escaping (\ " etc) steal code from pkgconf getline.c
+arrays-as-objects mode
+
+shell library to do the shell interpretation of --shellvars mode
+
+prefix all keys with a _something_
