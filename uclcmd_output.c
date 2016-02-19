@@ -110,7 +110,9 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
 	result = NULL;
 	func = ucl_object_emit_memory_funcs((void **)&result);
 	if (func != NULL) {
-	    ucl_object_emit_full(obj, output_type, func, comments);
+	    if (obj != NULL) {
+		ucl_object_emit_full(obj, output_type, func, comments);
+	    }
 	    ucl_object_emit_funcs_free(func);
 	}
 	if (nonewline) {
