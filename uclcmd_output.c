@@ -102,7 +102,11 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
 	output_key(obj, nodepath, key);
 	break;
     case UCL_EMIT_CONFIG: /* UCL */
+#if 0
 	comments = ucl_object_ref(ucl_parser_get_comments(parser));
+#else
+	comments = NULL;
+#endif
 	result = NULL;
 	func = ucl_object_emit_memory_funcs((void **)&result);
 	if (func != NULL) {
