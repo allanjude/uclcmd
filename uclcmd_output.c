@@ -327,7 +327,7 @@ ucl_obj_dump(const ucl_object_t *obj, unsigned int shift)
 	    pre[num] = 0x20;
 
     while ((cur = ucl_object_iterate_safe(it, false))) {
-	printf ("%sucl object address: %p\n", pre + 4, obj);
+	printf ("%sucl object address: %p\n", pre + 4, cur);
 	if (cur->key != NULL) {
 	    printf ("%skey: \"%s\"\n", pre, ucl_object_key (cur));
 	}
