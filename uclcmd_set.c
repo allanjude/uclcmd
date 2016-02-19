@@ -164,8 +164,7 @@ set_mode(char *destination_node, char *data)
     ucl_object_t *old_obj = NULL;
     int success = 0;
 
-    setparser = ucl_parser_new(UCL_PARSER_KEY_LOWERCASE |
-	UCL_PARSER_NO_IMPLICIT_ARRAYS);
+    setparser = ucl_parser_new(UCLCMD_PARSER_FLAGS);
 
     /* Lookup the destination to write to */
     dst_obj = get_parent(destination_node);
