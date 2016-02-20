@@ -52,6 +52,7 @@ remove_main(int argc, char *argv[])
 	{ "keys",	no_argument,		&show_keys,	1 },
 	{ "msgpack",	no_argument,		&output_type,
 	    UCL_EMIT_MSGPACK },
+	{ "noop",	no_argument,		&noop,		1 },
 	{ "nonewline",	no_argument,		&nonewline,	1 },
 	{ "noquotes",	no_argument,		&show_raw,	1 },
 	{ "shellvars",	no_argument,		NULL,		'l' },
@@ -61,7 +62,7 @@ remove_main(int argc, char *argv[])
 	{ NULL,		0,			NULL,		0 }
     };
 
-    while ((ch = getopt_long(argc, argv, "cdD:ef:jklmnquy", longopts, NULL)) != -1) {
+    while ((ch = getopt_long(argc, argv, "cdD:ef:jklmnNquy", longopts, NULL)) != -1) {
 	switch (ch) {
 	case 'c':
 	    output_type = UCL_EMIT_JSON_COMPACT;
@@ -102,6 +103,9 @@ remove_main(int argc, char *argv[])
 	    output_type = UCL_EMIT_MSGPACK;
 	    break;
 	case 'n':
+	    noop = 1;
+	    break;
+	case 'N':
 	    nonewline = 1;
 	    break;
 	case 'q':
