@@ -34,7 +34,8 @@
  * Does ucl_object_insert_key_common need to respect NO_IMPLICIT_ARRAY
  */
 
-int debug = 0, expand = 0, mode = 0, nonewline = 0, show_keys = 0, show_raw = 0;
+int debug = 0, expand = 0, mode = 0, noop = 0, nonewline = 0;
+int show_keys = 0, show_raw = 0;
 bool firstline = true, shvars = false;
 int output_type = 254;
 ucl_object_t *root_obj = NULL;
@@ -103,10 +104,10 @@ void
 usage()
 {
     fprintf(stderr, "%s\n",
-"Usage: uclcmd get [-cdejklmnquy] [-D char] [-f filename] variable\n"
-"       uclcmd set [-cdjmuy] [-D char] [-f filename] [-i filename] variable [UCL]\n"
-"       uclcmd merge [-cdjmuy] [-D char] [-f filename] [-i filename] variable\n"
-"       uclcmd remove [-cdjmuy] [-D char] [-f filename] variable\n"
+"Usage: uclcmd get [-cdejklmNquy] [-D char] [-f filename] variable\n"
+"       uclcmd set [-cdjmnuy] [-D char] [-f filename] [-i filename] variable [UCL]\n"
+"       uclcmd merge [-cdjmnuy] [-D char] [-f filename] [-i filename] variable\n"
+"       uclcmd remove [-cdjmnuy] [-D char] [-f filename] variable\n"
 "\n"
 "COMMON OPTIONS:\n"
 "       -c --cjson      output compacted JSON\n"
@@ -118,7 +119,8 @@ usage()
 "       -k --keys       show key=value rather than just the value\n"
 "       -l --shellvars  keys are output with underscores as delimiter\n"
 "       -m --msgpack    output MSGPACK\n"
-"       -n --nonewline  separate output with spaces rather than newlines\n"
+"       -n --noop       do not save changes to file, only output to STDOUT\n"
+"       -N --nonewline  separate output with spaces rather than newlines\n"
 "       -q --noquotes   do not enclose strings in quotes\n"
 "       -u --ucl        output universal config language\n"
 "       -y --yaml       output YAML\n"
