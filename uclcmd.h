@@ -47,7 +47,7 @@
 #define UCLCMD_PARSER_FLAGS	UCL_PARSER_KEY_LOWERCASE | \
 		UCL_PARSER_NO_IMPLICIT_ARRAYS | UCL_PARSER_SAVE_COMMENTS
 
-extern int debug, expand, nonewline, show_keys, show_raw;
+extern int debug, expand, noop, nonewline, show_keys, show_raw;
 extern bool firstline, shvars;
 extern int output_type;
 extern ucl_object_t *root_obj;
