@@ -193,9 +193,9 @@ merge_mode(char *destination_node, char *data)
 
     if (debug > 0) {
 	char *rt = NULL, *dt = NULL, *st = NULL;
-	rt = type_as_string(dst_obj);
-	dt = type_as_string(sub_obj);
-	st = type_as_string(set_obj);
+	rt = objtype_as_string(dst_obj);
+	dt = objtype_as_string(sub_obj);
+	st = objtype_as_string(set_obj);
 	fprintf(stderr, "root type: %s, destination type: %s, new type: %s\n",
 	    rt, dt, st);
 	if (rt != NULL) free(rt);

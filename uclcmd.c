@@ -105,7 +105,7 @@ usage()
 {
     fprintf(stderr, "%s\n",
 "Usage: uclcmd get [-cdejklmNquy] [-D char] [-f filename] variable\n"
-"       uclcmd set [-cdjmnuy] [-D char] [-f filename] [-i filename] variable [UCL]\n"
+"       uclcmd set [-cdjmnuy] [-t type] [-D char] [-f filename] [-i filename] variable [UCL]\n"
 "       uclcmd merge [-cdjmnuy] [-D char] [-f filename] [-i filename] variable\n"
 "       uclcmd remove [-cdjmnuy] [-D char] [-f filename] variable\n"
 "\n"
@@ -122,6 +122,7 @@ usage()
 "       -n --noop       do not save changes to file, only output to STDOUT\n"
 "       -N --nonewline  separate output with spaces rather than newlines\n"
 "       -q --noquotes   do not enclose strings in quotes\n"
+"       -t --type       make the new element this type\n"
 "       -u --ucl        output universal config language\n"
 "       -y --yaml       output YAML\n"
 "       variable        The key of the variable to read, in object notation\n"

@@ -37,6 +37,7 @@
 #include <errno.h>
 #include <getopt.h>
 #include <stdio.h>
+#include <inttypes.h>
 
 #include <ucl.h>
 
@@ -85,8 +86,10 @@ int process_get_command(const ucl_object_t *obj, char *nodepath,
 int remove_main(int argc, char *argv[]);
 void replace_sep(char *key, char oldsep, char newsep);
 int set_main(int argc, char *argv[]);
-int set_mode(char *destination_node, char *data);
-char * type_as_string (const ucl_object_t *obj);
+int set_mode(char *destination_node, char *data, ucl_type_t obj_type);
+ucl_type_t string_to_type (const char *strtype);
+char * type_as_string (ucl_type_t type);
+char * objtype_as_string (const ucl_object_t *obj);
 void ucl_obj_dump(const ucl_object_t *obj, unsigned int shift);
 void ucl_obj_dump_safe(const ucl_object_t *obj, unsigned int shift);
 void usage();

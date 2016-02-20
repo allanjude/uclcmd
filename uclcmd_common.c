@@ -186,40 +186,85 @@ replace_sep(char *key, char oldsep, char newsep)
     }
 }
 
+ucl_type_t
+string_to_type (const char *strtype)
+{
+
+    if (strtype == NULL) {
+	return UCL_NULL;
+    }
+
+    if (strcasecmp(strtype, "object") == 0) {
+	return UCL_OBJECT;
+    } else if (strcasecmp(strtype, "array") == 0) {
+	return UCL_ARRAY;
+    } else if (strncasecmp(strtype, "int", 3) == 0 ||
+	    strcasecmp(strtype, "number") == 0) {
+	return UCL_INT;
+    } else if (strcasecmp(strtype, "float") == 0 ||
+	    strcasecmp(strtype, "double") == 0) {
+	return UCL_FLOAT;
+    } else if (strcasecmp(strtype, "string") == 0) {
+	return UCL_STRING;
+    } else if (strncasecmp(strtype, "bool", 4) == 0) {
+	return UCL_BOOLEAN;
+    } else if (strcasecmp(strtype, "time") == 0 ||
+	    strncasecmp(strtype, "date", 4) == 0) {
+	return UCL_TIME;
+    } else if (strcasecmp(strtype, "userdata") == 0) {
+	return UCL_USERDATA;
+    } else if (strcasecmp(strtype, "null") == 0) {
+	return UCL_NULL;
+    }
+
+    return UCL_NULL;
+}
+
 char *
-type_as_string (const ucl_object_t *obj)
+type_as_string (ucl_type_t type)
 {
     char *ret = NULL;
 
-    if (obj == NULL) {
-	return NULL;
-    } else if (ucl_object_type(obj) == UCL_OBJECT) {
-	uclcmd_asprintf(&ret, "UCL_OBJECT");
-    }
-    else if (ucl_object_type(obj) == UCL_ARRAY) {
-	uclcmd_asprintf(&ret, "UCL_ARRAY");
-    }
-    else if (ucl_object_type(obj) == UCL_INT) {
-	uclcmd_asprintf(&ret, "UCL_INT");
-    }
-    else if (ucl_object_type(obj) == UCL_FLOAT) {
-	uclcmd_asprintf(&ret, "UCL_FLOAT");
-    }
-    else if (ucl_object_type(obj) == UCL_STRING) {
-	uclcmd_asprintf(&ret, "UCL_STRING");
-    }
-    else if (ucl_object_type(obj) == UCL_BOOLEAN) {
-	uclcmd_asprintf(&ret, "UCL_BOOLEAN");
-    }
-    else if (ucl_object_type(obj) == UCL_TIME) {
-	uclcmd_asprintf(&ret, "UCL_TIME");
-    }
-    else if (ucl_object_type(obj) == UCL_USERDATA) {
-	uclcmd_asprintf(&ret, "UCL_USERDATA");
-    }
-    else if (ucl_object_type(obj) == UCL_NULL) {
-	uclcmd_asprintf(&ret, "UCL_NULL");
+    switch (type) {
+	case UCL_OBJECT:
+	    uclcmd_asprintf(&ret, "UCL_OBJECT");
+	    break;
+	case UCL_ARRAY:
+	    uclcmd_asprintf(&ret, "UCL_ARRAY");
+	    break;
+	case UCL_INT:
+	    uclcmd_asprintf(&ret, "UCL_INT");
+	    break;
+	case UCL_FLOAT:
+	    uclcmd_asprintf(&ret, "UCL_FLOAT");
+	    break;
+	case UCL_STRING:
+	    uclcmd_asprintf(&ret, "UCL_STRING");
+	    break;
+	case UCL_BOOLEAN:
+	    uclcmd_asprintf(&ret, "UCL_BOOLEAN");
+	    break;
+	case UCL_TIME:
+	    uclcmd_asprintf(&ret, "UCL_TIME");
+	    break;
+	case UCL_USERDATA:
+	    uclcmd_asprintf(&ret, "UCL_USERDATA");
+	    break;
+	case UCL_NULL:
+	default:
+	    uclcmd_asprintf(&ret, "UCL_NULL");
+	    break;
     }
 
     return ret;
+}
+
+char *
+objtype_as_string (const ucl_object_t *obj)
+{
+
+    if (obj == NULL) {
+	return NULL;
+    }
+    return type_as_string(ucl_object_type(obj));
 }

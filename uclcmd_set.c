@@ -34,6 +34,7 @@ set_main(int argc, char *argv[])
     const char *filename = NULL;
     int ret = 0, ch;
     bool success = false;
+    ucl_type_t want_type = UCL_STRING;
 
     /* Initialize parser */
     parser = ucl_parser_new(UCLCMD_PARSER_FLAGS | UCL_PARSER_DISABLE_MACRO);
@@ -56,13 +57,14 @@ set_main(int argc, char *argv[])
 	{ "nonewline",	no_argument,		&nonewline,	1 },
 	{ "noquotes",	no_argument,		&show_raw,	1 },
 	{ "shellvars",	no_argument,		NULL,		'l' },
+	{ "type",	required_argument,	NULL,		't' },
 	{ "ucl",	no_argument,		&output_type,
 	    UCL_EMIT_CONFIG },
 	{ "yaml",	no_argument,		&output_type,	UCL_EMIT_YAML },
 	{ NULL,		0,			NULL,		0 }
     };
 
-    while ((ch = getopt_long(argc, argv, "cdD:ef:i:jklmnNquy", longopts, NULL)) != -1) {
+    while ((ch = getopt_long(argc, argv, "cdD:ef:i:jklmnNqt:uy", longopts, NULL)) != -1) {
 	switch (ch) {
 	case 'c':
 	    output_type = UCL_EMIT_JSON_COMPACT;
@@ -114,6 +116,9 @@ set_main(int argc, char *argv[])
 	case 'q':
 	    show_raw = 1;
 	    break;
+	case 't':
+	    want_type = string_to_type(optarg);
+	    break;
 	case 'u':
 	    output_type = UCL_EMIT_CONFIG;
 	    break;
@@ -140,9 +145,9 @@ set_main(int argc, char *argv[])
     }
 
     if (argc > 1) { 
-	success = set_mode(argv[0], argv[1]);
+	success = set_mode(argv[0], argv[1], want_type);
     } else {
-	success = set_mode(argv[0], NULL);
+	success = set_mode(argv[0], NULL, want_type);
     }
 
     if (success) {
@@ -161,7 +166,7 @@ set_main(int argc, char *argv[])
 }
 
 int
-set_mode(char *destination_node, char *data)
+set_mode(char *destination_node, char *data, ucl_type_t want_type)
 {
     ucl_object_t *dst_obj = NULL;
     ucl_object_t *sub_obj = NULL;
@@ -182,14 +187,74 @@ set_mode(char *destination_node, char *data)
 	set_obj = parse_input(setparser, stdin);
     } else {
 	/* User provided data inline */
-	set_obj = parse_string(setparser, data);
+	switch (want_type) {
+	/*
+	 * We try to let UCL do its magic, for syntax sugar etc, but if that
+	 * fails to provide the required type, we force it
+	 */
+	case UCL_INT:
+	    set_obj = ucl_object_fromstring_common(data, 0, UCL_STRING_PARSE_INT);
+	    if (ucl_object_type(set_obj) != UCL_INT) {
+		ucl_object_unref(set_obj);
+		set_obj = ucl_object_fromint(strtoimax(data, NULL, 0));
+	    }
+	    break;
+	case UCL_FLOAT:
+	    set_obj = ucl_object_fromstring_common(data, 0, UCL_STRING_PARSE_DOUBLE);
+	    if (ucl_object_type(set_obj) != UCL_FLOAT) {
+		ucl_object_unref(set_obj);
+		set_obj = ucl_object_fromdouble(strtod(data, NULL));
+	    }
+	    break;
+	case UCL_STRING:
+	    set_obj = ucl_object_fromstring_common(data, 0, UCL_STRING_RAW);
+	    break;
+	case UCL_BOOLEAN:
+	    set_obj = ucl_object_fromstring_common(data, 0, UCL_STRING_PARSE_BOOLEAN);
+	    if (ucl_object_type(set_obj) != UCL_BOOLEAN) {
+		if (strlen(data) == 0) {
+		    ucl_object_unref(set_obj);
+		    set_obj = ucl_object_frombool(false);
+		} else {
+		    ucl_object_unref(set_obj);
+		    set_obj = ucl_object_frombool(true);
+		}
+	    }
+	    break;
+	case UCL_TIME:
+	    set_obj = ucl_object_fromstring_common(data, 0,
+		UCL_STRING_PARSE_TIME | UCL_STRING_PARSE_DOUBLE);
+	    if (ucl_object_type(set_obj) != UCL_TIME &&
+		    ucl_object_type(set_obj) != UCL_INT &&
+		    ucl_object_type(set_obj) != UCL_FLOAT) {
+		ucl_object_unref(set_obj);
+		set_obj = ucl_object_fromdouble(strtod(data, NULL));
+		if (set_obj != NULL) {
+		    set_obj->type = UCL_TIME;
+		}
+	    }
+	    break;
+	case UCL_OBJECT:
+	case UCL_ARRAY:
+	case UCL_USERDATA:
+	case UCL_NULL:
+	    set_obj = parse_string(setparser, data);
+	    break;
+	}
+    }
+
+    if (want_type != UCL_NULL && ucl_object_type(set_obj) != want_type) {
+	fprintf(stderr, "Unable to convert '%s' to a %s, only %s\n",
+	    data, type_as_string(want_type), objtype_as_string(set_obj));
+	cleanup();
+	exit(6);
     }
 
     if (debug > 0) {
 	char *rt = NULL, *dt = NULL, *st = NULL;
-	rt = type_as_string(dst_obj);
-	dt = type_as_string(sub_obj);
-	st = type_as_string(set_obj);
+	rt = objtype_as_string(dst_obj);
+	dt = objtype_as_string(sub_obj);
+	st = objtype_as_string(set_obj);
 	fprintf(stderr, "root type: %s, destination type: %s, new type: %s\n",
 	    rt, dt, st);
 	if (rt != NULL) free(rt);
