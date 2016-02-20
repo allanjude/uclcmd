@@ -170,10 +170,6 @@ set_mode(char *destination_node, char *data)
     dst_obj = get_parent(destination_node);
     sub_obj = get_object(destination_node);
 
-    if (sub_obj == NULL) {
-	return false;
-    }
-
     if (include_file != NULL) {
 	/* get UCL to add from file */
 	set_obj = parse_file(setparser, include_file);
@@ -200,30 +196,40 @@ set_mode(char *destination_node, char *data)
 	    ucl_object_key(sub_obj), ucl_object_key(dst_obj));
     }
 
+    char *dst_frag = strrchr(destination_node, input_sepchar);
+    dst_frag++;
     /* Replace it in the object here */
     if (ucl_object_type(dst_obj) == UCL_ARRAY) {
-	char *dst_frag = strrchr(destination_node, input_sepchar);
-
 	/* XXX TODO: What if the destination_node only points to an array */
 	/* XXX TODO: What if we want to replace an entire array? */
-	dst_frag++;
 	if (debug > 0) {
 	    fprintf(stderr, "Replacing array index %s\n", dst_frag);
 	}
-	old_obj = ucl_array_replace_index(dst_obj, set_obj, strtoul(dst_frag,
-	    NULL, 0));
-	success = false;
-	if (old_obj != NULL) {
-	    ucl_object_unref(old_obj);
-	    set_obj = NULL;
-	    success = true;
+	if (sub_obj == dst_obj) {
+	    /* Sub-object does not exist, create a new one */
+	    success = ucl_array_append(dst_obj, set_obj);
+	} else {
+	    old_obj = ucl_array_replace_index(dst_obj, set_obj, strtoul(dst_frag,
+		NULL, 0));
+	    success = false;
+	    if (old_obj != NULL) {
+		ucl_object_unref(old_obj);
+		set_obj = NULL;
+		success = true;
+	    }
 	}
     } else {
 	if (debug > 0) {
 	    fprintf(stderr, "Replacing key %s\n", ucl_object_key(sub_obj));
 	}
-	success = ucl_object_replace_key(dst_obj, set_obj,
-	    ucl_object_key(sub_obj), 0, true);
+	if (sub_obj == dst_obj) {
+	    /* Sub-object does not exist, create a new one */
+	    success = ucl_object_insert_key(dst_obj, set_obj, dst_frag, 0,
+		true);
+	} else {
+	    success = ucl_object_replace_key(dst_obj, set_obj,
+		ucl_object_key(sub_obj), 0, true);
+	}
 	set_obj = NULL;
     }
 
