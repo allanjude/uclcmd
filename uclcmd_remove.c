@@ -38,6 +38,9 @@ remove_main(int argc, char *argv[])
     /* Initialize parser */
     parser = ucl_parser_new(UCLCMD_PARSER_FLAGS);
 
+    /* Set the default output type */
+    output_type = UCL_EMIT_CONFIG;
+
     /*	options	descriptor */
     static struct option longopts[] = {
 	{ "cjson",	no_argument,		&output_type,
