@@ -32,12 +32,16 @@ int
 set_main(int argc, char *argv[])
 {
     const char *filename = NULL;
+    const char *outfile = NULL;
     int ret = 0, ch;
     bool success = false;
     ucl_type_t want_type = UCL_STRING;
 
     /* Initialize parser */
     parser = ucl_parser_new(UCLCMD_PARSER_FLAGS | UCL_PARSER_DISABLE_MACRO);
+
+    /* Set the default output type */
+    output_type = UCL_EMIT_CONFIG;
 
     /*	options	descriptor */
     static struct option longopts[] = {
@@ -56,6 +60,7 @@ set_main(int argc, char *argv[])
 	{ "noop",	no_argument,		&noop,		1 },
 	{ "nonewline",	no_argument,		&nonewline,	1 },
 	{ "noquotes",	no_argument,		&show_raw,	1 },
+	{ "output",	required_argument,	NULL,		'o' },
 	{ "shellvars",	no_argument,		NULL,		'l' },
 	{ "type",	required_argument,	NULL,		't' },
 	{ "ucl",	no_argument,		&output_type,
@@ -64,7 +69,7 @@ set_main(int argc, char *argv[])
 	{ NULL,		0,			NULL,		0 }
     };
 
-    while ((ch = getopt_long(argc, argv, "cdD:ef:i:jklmnNqt:uy", longopts, NULL)) != -1) {
+    while ((ch = getopt_long(argc, argv, "cdD:ef:i:jklmnNoqt:uy", longopts, NULL)) != -1) {
 	switch (ch) {
 	case 'c':
 	    output_type = UCL_EMIT_JSON_COMPACT;
@@ -113,6 +118,9 @@ set_main(int argc, char *argv[])
 	case 'N':
 	    nonewline = 1;
 	    break;
+	case 'o':
+	    outfile = optarg;
+	    break;
 	case 'q':
 	    show_raw = 1;
 	    break;
@@ -151,7 +159,18 @@ set_main(int argc, char *argv[])
     }
 
     if (success) {
-	get_mode("");
+	if (noop == 0) {
+	    if (outfile == NULL) {
+		outfile = filename;
+	    }
+	    success = output_file(root_obj, outfile);
+	    if (success != 0) {
+		fprintf(stderr, "Error: failed to write the changes to %s\n",
+		    outfile);
+	    }
+	} else {
+	    get_mode("");
+	}
     } else {
 	fprintf(stderr, "Error: Failed to apply the set operation.\n");
 	ret = 1;

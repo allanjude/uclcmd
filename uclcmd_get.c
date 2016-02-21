@@ -220,7 +220,7 @@ get_mode(char *requested_node)
 	    command_count);
     }
     if (command_count == 0) {
-	output_chunk(found_object, nodepath, "");
+	output_chunk(found_object, nodepath, "", stdout);
     }
     free(nodepath);
 }
@@ -448,7 +448,7 @@ get_cmd_iterate(const ucl_object_t *obj, char *nodepath,
 	it = NULL;
 	char blankkey = '\0';
 	while ((cur = ucl_iterate_object(obj, &it, false))) {
-	    output_chunk(cur, nodepath, &blankkey);
+	    output_chunk(cur, nodepath, &blankkey, stdout);
 	    loopcount++;
 	}
     } else if (obj != NULL) {
@@ -485,13 +485,13 @@ get_cmd_recurse(const ucl_object_t *obj, char *nodepath,
     int loopcount = 0, arrindex = 0;
 
     if (strlen(nodepath) > 0) {
-	output_chunk(obj, nodepath, "");
+	output_chunk(obj, nodepath, "", stdout);
 	if (expand && ucl_object_type(obj) == UCL_ARRAY) {
 	    ucl_object_t *arrlen = NULL;
 
 	    arrlen = ucl_object_fromint(obj->len);
 	    uclcmd_asprintf(&tmpkeyname, "%c%s", output_sepchar, "_length");
-	    output_chunk(arrlen, nodepath, tmpkeyname);
+	    output_chunk(arrlen, nodepath, tmpkeyname, stdout);
 	    free(tmpkeyname);
 	}
     }
@@ -503,7 +503,7 @@ get_cmd_recurse(const ucl_object_t *obj, char *nodepath,
 	if (keylist != NULL) {
 	    keystr = ucl_object_fromstring(keylist);
 	    uclcmd_asprintf(&tmpkeyname, "%c%s", output_sepchar, "_keys");
-	    output_chunk(keystr, nodepath, tmpkeyname);
+	    output_chunk(keystr, nodepath, tmpkeyname, stdout);
 	    free(tmpkeyname);
 	    free(keylist);
 	}
@@ -538,7 +538,7 @@ get_cmd_recurse(const ucl_object_t *obj, char *nodepath,
 		    recurse + 1);
 	    }
 	} else {
-	    output_chunk(cur, nodepath, newkey);
+	    output_chunk(cur, nodepath, newkey, stdout);
 	}
 	loopcount++;
 	free(newkey);
@@ -577,10 +577,10 @@ get_cmd_each(const ucl_object_t *obj, char *nodepath,
 		/* Implicit array */
 		it2 = NULL;
 		while ((cur2 = ucl_iterate_object(cur, &it2, false))) {
-		    output_chunk(cur2, nodepath, newkey);
+		    output_chunk(cur2, nodepath, newkey, stdout);
 		}
 	    } else {
-		output_chunk(cur, nodepath, newkey);
+		output_chunk(cur, nodepath, newkey, stdout);
 	    }
 	    loopcount++;
 	    free(newkey);

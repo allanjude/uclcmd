@@ -84,7 +84,8 @@ output_main(int argc, char *argv[])
 }
 
 void
-output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
+output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey,
+    FILE *target)
 {
     unsigned char *result = NULL;
     char *key = strdup(inkey);
@@ -119,13 +120,13 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
 	    fprintf(stderr, "WARN: UCL output cannot be 'nonewline'd\n");
 	}
 	if (show_keys == 1 && strlen(key) > 0)
-	    printf("%s%s=", nodepath, key);
-	printf("%s", result);
+	    fprintf(target, "%s%s=", nodepath, key);
+	fprintf(target, "%s", result);
 	free(result);
 	if (nonewline) {
 	    firstline = false;
 	} else {
-	    printf("\n");
+	    fprintf(target, "\n");
 	}
 	break;
     case UCL_EMIT_JSON: /* JSON */
@@ -135,25 +136,25 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
 		"WARN: non-compact JSON output cannot be 'nonewline'd\n");
 	}
 	if (show_keys == 1 && strlen(key) > 0)
-	    printf("%s%s=", nodepath, key);
-	printf("%s", result);
+	    fprintf(target, "%s%s=", nodepath, key);
+	fprintf(target, "%s", result);
 	free(result);
 	if (nonewline) {
 	    firstline = false;
 	} else {
-	    printf("\n");
+	    fprintf(target, "\n");
 	}
 	break;
     case UCL_EMIT_JSON_COMPACT: /* Compact JSON */
 	result = ucl_object_emit(obj, output_type);
 	if (show_keys == 1 && strlen(key) > 0)
-	    printf("%s%s=", nodepath, key);
-	printf("%s", result);
+	    fprintf(target, "%s%s=", nodepath, key);
+	fprintf(target, "%s", result);
 	free(result);
 	if (nonewline) {
 	    firstline = false;
 	} else {
-	    printf("\n");
+	    fprintf(target, "\n");
 	}
 	break;
     case UCL_EMIT_YAML: /* YAML */
@@ -162,13 +163,13 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
 	    fprintf(stderr, "WARN: YAML output cannot be 'nonewline'd\n");
 	}
 	if (show_keys == 1 && strlen(key) > 0)
-	    printf("%s%s=", nodepath, key);
-	printf("%s", result);
+	    fprintf(target, "%s%s=", nodepath, key);
+	fprintf(target, "%s", result);
 	free(result);
 	if (nonewline) {
 	    firstline = false;
 	} else {
-	    printf("\n");
+	    fprintf(target, "\n");
 	}
 	break;
     case UCL_EMIT_MSGPACK: /* Msgpack */
@@ -177,13 +178,13 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
 	    fprintf(stderr, "WARN: Msgpack output cannot be 'nonewline'd\n");
 	}
 	if (show_keys == 1 && strlen(key) > 0)
-	    printf("%s%s=", nodepath, key);
-	printf("%s", result);
+	    fprintf(target, "%s%s=", nodepath, key);
+	fprintf(target, "%s", result);
 	free(result);
 	if (nonewline) {
 	    firstline = false;
 	} else {
-	    printf("\n");
+	    fprintf(target, "\n");
 	}
 	break;
     default:
@@ -193,6 +194,57 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
     }
 
     free(key);
+}
+
+int
+output_file(const ucl_object_t *obj, const char *output_filename)
+{
+    int success = 0, fd;
+    char *tmp_filename;
+    FILE *outfile;
+    struct stat fst;
+    
+    uclcmd_asprintf(&tmp_filename, "%s.XXXXXXXXXX", output_filename);
+
+    fd = mkostemp(tmp_filename, O_DIRECT | O_EXLOCK);
+    if (fd == -1) {
+	fprintf(stderr, "Failed to open a temporary file for writing\n");
+	cleanup();
+	exit(7);
+    }
+    outfile = fdopen(fd, "w");
+    if (outfile == NULL) {
+	fprintf(stderr, "Failed to open a temporary file for writing\n");
+	cleanup();
+	exit(7);
+    }
+
+    /* Set permissions to make the original file */
+    success = stat(output_filename ,&fst);
+    /*
+     * If the output file does not exist, use default permissions,
+     * otherwise, copy the permissions from the file we are overwriting
+     */
+    if (success == 0) {
+	fchown(fd, fst.st_uid, fst.st_gid);
+	fchmod(fd, fst.st_mode);
+    }
+    
+    output_chunk(obj, "", "", outfile);
+
+    /* Make sure everything is on disk */
+    fsync(fd);
+    fclose(outfile);
+
+    /* Rename the file into place over the old file */
+    success = rename(tmp_filename, output_filename);
+    if (success != 0) {
+	fprintf(stderr, "Failed to rename the temporary file\n");
+	cleanup();
+	exit(7);
+    }
+
+    return success;
 }
 
 void
