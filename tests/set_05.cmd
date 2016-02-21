@@ -1,1 +1,1 @@
-set --ucl rootkey.array not-an-array-anymore
+set -n --ucl rootkey.array not-an-array-anymore
