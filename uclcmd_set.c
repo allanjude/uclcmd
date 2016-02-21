@@ -31,8 +31,6 @@
 int
 set_main(int argc, char *argv[])
 {
-    const char *filename = NULL;
-    const char *outfile = NULL;
     int ret = 0, ch;
     bool success = false;
     ucl_type_t want_type = UCL_NULL;
@@ -69,7 +67,7 @@ set_main(int argc, char *argv[])
 	{ NULL,		0,			NULL,		0 }
     };
 
-    while ((ch = getopt_long(argc, argv, "cdD:ef:i:jklmnNoqt:uy", longopts, NULL)) != -1) {
+    while ((ch = getopt_long(argc, argv, "cdD:ef:i:jklmnNo:qt:uy", longopts, NULL)) != -1) {
 	switch (ch) {
 	case 'c':
 	    output_type = UCL_EMIT_JSON_COMPACT;
@@ -120,6 +118,7 @@ set_main(int argc, char *argv[])
 	    break;
 	case 'o':
 	    outfile = optarg;
+	    output = output_open(outfile);
 	    break;
 	case 'q':
 	    show_raw = 1;
@@ -162,9 +161,9 @@ set_main(int argc, char *argv[])
 	if (noop == 0) {
 	    if (outfile == NULL) {
 		outfile = filename;
-		success = replace_file(root_obj, outfile);
+		success = replace_file(root_obj, "", "", outfile);
 	    } else {
-		success = output_file(root_obj, outfile);
+		output_chunk(root_obj, "", "");
 	    }
 	    if (success != 0) {
 		fprintf(stderr, "Error: failed to write the changes to %s\n",
@@ -180,9 +179,6 @@ set_main(int argc, char *argv[])
 
     cleanup();
 
-    if (nonewline) {
-	printf("\n");
-    }
     return(ret);
 }
 

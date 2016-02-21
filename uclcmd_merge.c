@@ -31,7 +31,6 @@
 int
 merge_main(int argc, char *argv[])
 {
-    const char *filename = NULL;
     int ret = 0, ch;
     bool success = false;
 
@@ -55,6 +54,7 @@ merge_main(int argc, char *argv[])
 	{ "noop",	no_argument,		&noop,		1 },
 	{ "nonewline",	no_argument,		&nonewline,	1 },
 	{ "noquotes",	no_argument,		&show_raw,	1 },
+	{ "output",	required_argument,	NULL,		'o' },
 	{ "shellvars",	no_argument,		NULL,		'l' },
 	{ "ucl",	no_argument,		&output_type,
 	    UCL_EMIT_CONFIG },
@@ -62,7 +62,7 @@ merge_main(int argc, char *argv[])
 	{ NULL,		0,			NULL,		0 }
     };
 
-    while ((ch = getopt_long(argc, argv, "cdD:ef:i:jklmnNquy", longopts, NULL)) != -1) {
+    while ((ch = getopt_long(argc, argv, "cdD:ef:i:jklmnNo:quy", longopts, NULL)) != -1) {
 	switch (ch) {
 	case 'c':
 	    output_type = UCL_EMIT_JSON_COMPACT;
@@ -111,6 +111,10 @@ merge_main(int argc, char *argv[])
 	case 'N':
 	    nonewline = 1;
 	    break;
+	case 'o':
+	    outfile = optarg;
+	    output = output_open(outfile);
+	    break;
 	case 'q':
 	    show_raw = 1;
 	    break;
@@ -154,9 +158,6 @@ merge_main(int argc, char *argv[])
 
     cleanup();
 
-    if (nonewline) {
-	printf("\n");
-    }
     return(ret);
 }
 

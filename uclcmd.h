@@ -63,6 +63,9 @@ extern struct ucl_parser *parser;
 extern struct ucl_parser *setparser;
 extern char input_sepchar;
 extern char output_sepchar;
+extern const char *filename;
+extern const char *outfile;
+extern FILE *output;
 extern char *include_file;
 
 typedef int (*verb_func_t)(int argc, char *argv[]);
@@ -81,10 +84,11 @@ ucl_object_t* get_parent(char *selected_node);
 int merge_main(int argc, char *argv[]);
 int merge_mode(char *destination_node, char *data);
 bool merge_recursive(ucl_object_t *top, ucl_object_t *elt, bool copy);
-void output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey,
-    FILE *target);
-int output_file(const ucl_object_t *obj, const char *output_filename);
-int replace_file(const ucl_object_t *obj, const char *output_filename);
+void output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey);
+FILE * output_open(const char *output_filename);
+void output_close(FILE *out);
+int replace_file(const ucl_object_t *obj, char *nodepath, const char *inkey,
+    const char *output_filename);
 int output_main(int argc, char *argv[]);
 void output_key(const ucl_object_t *obj, char *nodepath, const char *inkey);
 ucl_object_t* parse_file(struct ucl_parser *parser, const char *filename);
