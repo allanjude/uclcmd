@@ -199,6 +199,33 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey,
 int
 output_file(const ucl_object_t *obj, const char *output_filename)
 {
+    int success = 0;
+    FILE *outfile;
+    
+    outfile = fopen(output_filename, "w");
+    if (outfile == NULL) {
+	fprintf(stderr, "Failed to open file for writing\n");
+	cleanup();
+	exit(7);
+    }
+
+    output_chunk(obj, "", "", outfile);
+
+    /* Make sure everything is on disk */
+    success = fsync(fileno(outfile));
+    if (success != 0) {
+	fprintf(stderr, "Failed to sync file\n");
+	cleanup();
+	exit(7);
+    }
+    success = fclose(outfile);
+
+    return success;
+}
+
+int
+replace_file(const ucl_object_t *obj, const char *output_filename)
+{
     int success = 0, fd;
     char *tmp_filename;
     FILE *outfile;
@@ -233,8 +260,13 @@ output_file(const ucl_object_t *obj, const char *output_filename)
     output_chunk(obj, "", "", outfile);
 
     /* Make sure everything is on disk */
-    fsync(fd);
-    fclose(outfile);
+    success = fsync(fd);
+    if (success != 0) {
+	fprintf(stderr, "Failed to sync file\n");
+	cleanup();
+	exit(7);
+    }
+    success = fclose(outfile);
 
     /* Rename the file into place over the old file */
     success = rename(tmp_filename, output_filename);

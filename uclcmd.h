@@ -84,6 +84,7 @@ bool merge_recursive(ucl_object_t *top, ucl_object_t *elt, bool copy);
 void output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey,
     FILE *target);
 int output_file(const ucl_object_t *obj, const char *output_filename);
+int replace_file(const ucl_object_t *obj, const char *output_filename);
 int output_main(int argc, char *argv[]);
 void output_key(const ucl_object_t *obj, char *nodepath, const char *inkey);
 ucl_object_t* parse_file(struct ucl_parser *parser, const char *filename);

@@ -162,14 +162,16 @@ set_main(int argc, char *argv[])
 	if (noop == 0) {
 	    if (outfile == NULL) {
 		outfile = filename;
+		success = replace_file(root_obj, outfile);
+	    } else {
+		success = output_file(root_obj, outfile);
 	    }
-	    success = output_file(root_obj, outfile);
 	    if (success != 0) {
 		fprintf(stderr, "Error: failed to write the changes to %s\n",
 		    outfile);
 	    }
 	} else {
-	    get_mode("");
+s	    get_mode("");
 	}
     } else {
 	fprintf(stderr, "Error: Failed to apply the set operation.\n");
