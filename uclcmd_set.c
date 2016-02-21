@@ -189,6 +189,7 @@ set_mode(char *destination_node, char *data, ucl_type_t want_type)
     ucl_object_t *sub_obj = NULL;
     ucl_object_t *old_obj = NULL;
     int success = 0;
+    char *dst_frag;
 
     setparser = ucl_parser_new(UCLCMD_PARSER_FLAGS);
 
@@ -284,7 +285,7 @@ set_mode(char *destination_node, char *data, ucl_type_t want_type)
 	    ucl_object_key(sub_obj), ucl_object_key(dst_obj));
     }
 
-    char *dst_frag = strrchr(destination_node, input_sepchar);
+    dst_frag = strrchr(destination_node, input_sepchar);
     dst_frag++;
     /* Replace it in the object here */
     if (ucl_object_type(dst_obj) == UCL_ARRAY) {
