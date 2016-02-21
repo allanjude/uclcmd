@@ -34,7 +34,7 @@ set_main(int argc, char *argv[])
     const char *filename = NULL;
     int ret = 0, ch;
     bool success = false;
-    ucl_type_t want_type = UCL_STRING;
+    ucl_type_t want_type = UCL_NULL;
 
     /* Initialize parser */
     parser = ucl_parser_new(UCLCMD_PARSER_FLAGS | UCL_PARSER_DISABLE_MACRO);
@@ -234,10 +234,12 @@ set_mode(char *destination_node, char *data, ucl_type_t want_type)
 		}
 	    }
 	    break;
+	case UCL_NULL:
+	    set_obj = ucl_object_fromstring_common(data, 0, UCL_STRING_PARSE);
+	    break;
 	case UCL_OBJECT:
 	case UCL_ARRAY:
 	case UCL_USERDATA:
-	case UCL_NULL:
 	    set_obj = parse_string(setparser, data);
 	    break;
 	}
