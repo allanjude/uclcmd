@@ -86,6 +86,7 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
     char *key = strdup(inkey);
     ucl_object_t *comments;
     struct ucl_emitter_functions *func;
+    bool hasnewline = false;
 
     if (shvars == true) {
 	replace_sep(nodepath, '.', '_');
@@ -114,13 +115,17 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
 	if (nonewline) {
 	    fprintf(stderr, "WARN: UCL output cannot be 'nonewline'd\n");
 	}
-	if (show_keys == 1 && strlen(key) > 0)
+	if (show_keys == 1 && strlen(key) > 0) {
 	    fprintf(output, "%s%s=", nodepath, key);
+	}
+	if (result[strlen((char *)result) - 1] == '\n') {
+	    hasnewline = true;
+	}
 	fprintf(output, "%s", result);
 	free(result);
 	if (nonewline) {
 	    firstline = false;
-	} else {
+	} else if (hasnewline == false) {
 	    fprintf(output, "\n");
 	}
 	break;
@@ -130,13 +135,17 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
 	    fprintf(stderr,
 		"WARN: non-compact JSON output cannot be 'nonewline'd\n");
 	}
-	if (show_keys == 1 && strlen(key) > 0)
+	if (show_keys == 1 && strlen(key) > 0) {
 	    fprintf(output, "%s%s=", nodepath, key);
+	}
+	if (result[strlen((char *)result) - 1] == '\n') {
+	    hasnewline = true;
+	}
 	fprintf(output, "%s", result);
 	free(result);
 	if (nonewline) {
 	    firstline = false;
-	} else {
+	} else if (hasnewline == false) {
 	    fprintf(output, "\n");
 	}
 	break;
@@ -148,7 +157,7 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
 	free(result);
 	if (nonewline) {
 	    firstline = false;
-	} else {
+	} else if (hasnewline == false) {
 	    fprintf(output, "\n");
 	}
 	break;
@@ -157,13 +166,14 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
 	if (nonewline) {
 	    fprintf(stderr, "WARN: YAML output cannot be 'nonewline'd\n");
 	}
-	if (show_keys == 1 && strlen(key) > 0)
+	if (show_keys == 1 && strlen(key) > 0) {
 	    fprintf(output, "%s%s=", nodepath, key);
+	}
 	fprintf(output, "%s", result);
 	free(result);
 	if (nonewline) {
 	    firstline = false;
-	} else {
+	} else if (hasnewline == false) {
 	    fprintf(output, "\n");
 	}
 	break;
@@ -172,13 +182,14 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
 	if (nonewline) {
 	    fprintf(stderr, "WARN: Msgpack output cannot be 'nonewline'd\n");
 	}
-	if (show_keys == 1 && strlen(key) > 0)
+	if (show_keys == 1 && strlen(key) > 0) {
 	    fprintf(output, "%s%s=", nodepath, key);
+	}
 	fprintf(output, "%s", result);
 	free(result);
 	if (nonewline) {
 	    firstline = false;
-	} else {
+	} else if (hasnewline == false) {
 	    fprintf(output, "\n");
 	}
 	break;
