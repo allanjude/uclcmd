@@ -37,6 +37,9 @@ merge_main(int argc, char *argv[])
     /* Initialize parser */
     parser = ucl_parser_new(UCLCMD_PARSER_FLAGS);
 
+    /* Set the default output type */
+    output_type = UCL_EMIT_CONFIG;
+
     /*	options	descriptor */
     static struct option longopts[] = {
 	{ "cjson",	no_argument,		&output_type,
@@ -169,6 +172,7 @@ merge_mode(char *destination_node, char *data)
     ucl_object_t *old_obj = NULL;
     ucl_object_t *tmp_obj = NULL;
     int success = 0;
+    char *dst_frag;
 
     setparser = ucl_parser_new(UCL_PARSER_KEY_LOWERCASE |
 	UCL_PARSER_NO_IMPLICIT_ARRAYS);
@@ -178,6 +182,8 @@ merge_mode(char *destination_node, char *data)
     sub_obj = get_object(destination_node);
 
     if (sub_obj == NULL) {
+	fprintf(stderr, "Failed to find destination node: %s\n",
+	    destination_node);
 	return false;
     }
 
@@ -207,8 +213,14 @@ merge_mode(char *destination_node, char *data)
 	    ucl_object_key(sub_obj), ucl_object_key(dst_obj));
     }
 
+    dst_frag = strrchr(destination_node, input_sepchar);
+    dst_frag++;
     /* Add it to the object here */
-    if (ucl_object_type(sub_obj) == UCL_ARRAY && ucl_object_type(set_obj) == UCL_ARRAY) {
+    if (sub_obj == dst_obj && *dst_frag != '\0') {
+	/* Sub-object does not exist, create a new one */
+	success = ucl_object_insert_key(dst_obj, set_obj, dst_frag, 0,
+	    true);
+    } else if (ucl_object_type(sub_obj) == UCL_ARRAY && ucl_object_type(set_obj) == UCL_ARRAY) {
 	if (debug > 0) {
 	    fprintf(stderr, "Merging array of size %u with array of size %u\n",
 		sub_obj->len, set_obj->len);
