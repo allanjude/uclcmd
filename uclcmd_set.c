@@ -159,15 +159,16 @@ set_main(int argc, char *argv[])
 
     if (success) {
 	if (noop == 0) {
-	    if (outfile == NULL) {
+	    if (outfile == NULL && filename != NULL) {
 		outfile = filename;
 		success = replace_file(root_obj, "", "", outfile);
+		if (success != 0) {
+		    fprintf(stderr, "Error: failed to write the changes to %s\n",
+			outfile);
+		    exit(7);
+		}
 	    } else {
 		output_chunk(root_obj, "", "");
-	    }
-	    if (success != 0) {
-		fprintf(stderr, "Error: failed to write the changes to %s\n",
-		    outfile);
 	    }
 	} else {
 	    get_mode("");
@@ -196,6 +197,12 @@ set_mode(char *destination_node, char *data, ucl_type_t want_type)
     /* Lookup the destination to write to */
     dst_obj = get_parent(destination_node);
     sub_obj = get_object(destination_node);
+
+    if (sub_obj == NULL) {
+	fprintf(stderr, "Failed to find destination node: %s\n",
+	    destination_node);
+	return false;
+    }
 
     if (include_file != NULL) {
 	/* get UCL to add from file */
@@ -286,7 +293,11 @@ set_mode(char *destination_node, char *data, ucl_type_t want_type)
     }
 
     dst_frag = strrchr(destination_node, input_sepchar);
-    dst_frag++;
+    if (dst_frag == NULL) {
+	dst_frag = destination_node;
+    } else {
+	dst_frag++;
+    }
     /* Replace it in the object here */
     if (ucl_object_type(dst_obj) == UCL_ARRAY) {
 	/* XXX TODO: What if the destination_node only points to an array */

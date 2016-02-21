@@ -214,7 +214,11 @@ merge_mode(char *destination_node, char *data)
     }
 
     dst_frag = strrchr(destination_node, input_sepchar);
-    dst_frag++;
+    if (dst_frag == NULL) {
+	dst_frag = destination_node;
+    } else {
+	dst_frag++;
+    }
     /* Add it to the object here */
     if (sub_obj == dst_obj && *dst_frag != '\0') {
 	/* Sub-object does not exist, create a new one */

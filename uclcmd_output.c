@@ -246,7 +246,12 @@ replace_file(const ucl_object_t *obj, char *nodepath, const char *inkey,
     char *tmp_filename;
     FILE *out;
     struct stat fst;
-    
+
+    if (output_filename == NULL) {
+	fprintf(stderr, "Invalid output filename: %s\n", output_filename);
+	return -1;
+    }
+
     uclcmd_asprintf(&tmp_filename, "%s.XXXXXXXXXX", output_filename);
 
     fd = mkostemp(tmp_filename, O_DIRECT | O_EXLOCK);
