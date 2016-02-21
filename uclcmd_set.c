@@ -171,7 +171,7 @@ set_main(int argc, char *argv[])
 		    outfile);
 	    }
 	} else {
-s	    get_mode("");
+	    get_mode("");
 	}
     } else {
 	fprintf(stderr, "Error: Failed to apply the set operation.\n");
