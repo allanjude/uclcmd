@@ -153,7 +153,7 @@ remove_main(int argc, char *argv[])
 	    continue;
 	}
 	obj_child = get_object(argv[k]);
-	if (obj_child == NULL) {
+	if (obj_child == NULL || obj_child == obj_parent) {
 	    fprintf(stderr, "Failed to find key %s, skipping...\n", argv[k]);
 	    continue;
 	}
