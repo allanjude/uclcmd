@@ -174,15 +174,15 @@ get_parent(char *selected_node)
 }
 
 void
-replace_sep(char *key, char oldsep, char newsep)
+replace_sep(char *key, int oldsep, int newsep)
 {
-    int idx = 0;
+    char *ptr;
+
     if (oldsep == newsep) return;
-    while (key[idx] != '\0') {
-	if (key[idx] == oldsep) {
-	    key[idx] = newsep;
-	}
-	idx++;
+    ptr = key;
+    while ((ptr = strchr(ptr, oldsep)) != NULL) {
+	    *ptr = newsep;
+	    ptr++;
     }
 }
 
