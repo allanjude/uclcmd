@@ -5,4 +5,3 @@ rootkey {
     }
     array = "not-an-array-anymore";
 }
-
