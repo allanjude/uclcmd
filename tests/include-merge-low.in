@@ -1,0 +1,11 @@
+.priority 2
+vm1 {
+	cpus = 1
+	origin = 4
+	mode = merge
+	sub {
+		a = b
+		c = d
+	}
+}
+.include(duplicate=merge, priority=1, path=[tests/]) include-merge-low_01.ucl
