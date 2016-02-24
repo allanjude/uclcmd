@@ -220,7 +220,11 @@ get_mode(char *requested_node)
 	    command_count);
     }
     if (command_count == 0) {
-	output_chunk(found_object, nodepath, "");
+	if (shvars == 1) {
+		get_cmd_recurse(found_object, "", "recurse", "", 0);
+	} else {
+		output_chunk(found_object, nodepath, "");
+	}
     }
     free(nodepath);
 }
@@ -520,8 +524,8 @@ get_cmd_recurse(const ucl_object_t *obj, char *nodepath,
 	} else {
 	    uclcmd_asprintf(&newkey, "%c%s", output_sepchar, ucl_object_key(cur));
 	}
-	if (ucl_object_type(cur) == UCL_OBJECT ||
-		ucl_object_type(cur) == UCL_ARRAY) {
+	if (expand == 1 && (ucl_object_type(cur) == UCL_OBJECT ||
+		ucl_object_type(cur) == UCL_ARRAY)) {
 	    it2 = NULL;
 	    while ((cur2 = ucl_iterate_object(cur, &it2, false))) {
 		if (nodepath != NULL && strlen(nodepath) > 0) {
