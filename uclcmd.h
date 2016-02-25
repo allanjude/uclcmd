@@ -84,7 +84,7 @@ ucl_object_t* parse_string(struct ucl_parser *parser, char *data);
 int process_get_command(const ucl_object_t *obj, char *nodepath,
     const char *command_str, char *remaining_commands, int recurse);
 int remove_main(int argc, char *argv[]);
-void replace_sep(char *key, char oldsep, char newsep);
+void replace_sep(char *key, int oldsep, int newsep);
 int set_main(int argc, char *argv[]);
 int set_mode(char *destination_node, char *data, ucl_type_t obj_type);
 ucl_type_t string_to_type (const char *strtype);
