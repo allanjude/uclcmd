@@ -1,1 +1,1 @@
-set --ucl rootkey.array -i tests/set_04.ucl
+set -n --ucl rootkey.array -i tests/set_04.ucl

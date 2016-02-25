@@ -56,7 +56,7 @@ output_main(int argc, char *argv[])
 	    }
 	    break;
 	case 'i':
-	    printf("Not implemented yet\n");
+	    fprintf(stderr, "Not implemented yet\n");
 	    exit(1);
 	    break;
 	default:
@@ -76,10 +76,6 @@ output_main(int argc, char *argv[])
 
     cleanup();
 
-    if (nonewline) {
-	printf("\n");
-    }
-
     return(ret);
 }
 
@@ -90,6 +86,7 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
     char *key = strdup(inkey);
     ucl_object_t *comments;
     struct ucl_emitter_functions *func;
+    bool hasnewline = false;
 
     if (shvars == true) {
 	replace_sep(nodepath, '.', '_');
@@ -118,14 +115,18 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
 	if (nonewline) {
 	    fprintf(stderr, "WARN: UCL output cannot be 'nonewline'd\n");
 	}
-	if (show_keys == 1 && strlen(key) > 0)
-	    printf("%s%s=", nodepath, key);
-	printf("%s", result);
+	if (show_keys == 1 && strlen(key) > 0) {
+	    fprintf(output, "%s%s=", nodepath, key);
+	}
+	if (result[strlen((char *)result) - 1] == '\n') {
+	    hasnewline = true;
+	}
+	fprintf(output, "%s", result);
 	free(result);
 	if (nonewline) {
 	    firstline = false;
-	} else {
-	    printf("\n");
+	} else if (hasnewline == false) {
+	    fprintf(output, "\n");
 	}
 	break;
     case UCL_EMIT_JSON: /* JSON */
@@ -134,26 +135,30 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
 	    fprintf(stderr,
 		"WARN: non-compact JSON output cannot be 'nonewline'd\n");
 	}
-	if (show_keys == 1 && strlen(key) > 0)
-	    printf("%s%s=", nodepath, key);
-	printf("%s", result);
+	if (show_keys == 1 && strlen(key) > 0) {
+	    fprintf(output, "%s%s=", nodepath, key);
+	}
+	if (result[strlen((char *)result) - 1] == '\n') {
+	    hasnewline = true;
+	}
+	fprintf(output, "%s", result);
 	free(result);
 	if (nonewline) {
 	    firstline = false;
-	} else {
-	    printf("\n");
+	} else if (hasnewline == false) {
+	    fprintf(output, "\n");
 	}
 	break;
     case UCL_EMIT_JSON_COMPACT: /* Compact JSON */
 	result = ucl_object_emit(obj, output_type);
 	if (show_keys == 1 && strlen(key) > 0)
-	    printf("%s%s=", nodepath, key);
-	printf("%s", result);
+	    fprintf(output, "%s%s=", nodepath, key);
+	fprintf(output, "%s", result);
 	free(result);
 	if (nonewline) {
 	    firstline = false;
-	} else {
-	    printf("\n");
+	} else if (hasnewline == false) {
+	    fprintf(output, "\n");
 	}
 	break;
     case UCL_EMIT_YAML: /* YAML */
@@ -161,14 +166,15 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
 	if (nonewline) {
 	    fprintf(stderr, "WARN: YAML output cannot be 'nonewline'd\n");
 	}
-	if (show_keys == 1 && strlen(key) > 0)
-	    printf("%s%s=", nodepath, key);
-	printf("%s", result);
+	if (show_keys == 1 && strlen(key) > 0) {
+	    fprintf(output, "%s%s=", nodepath, key);
+	}
+	fprintf(output, "%s", result);
 	free(result);
 	if (nonewline) {
 	    firstline = false;
-	} else {
-	    printf("\n");
+	} else if (hasnewline == false) {
+	    fprintf(output, "\n");
 	}
 	break;
     case UCL_EMIT_MSGPACK: /* Msgpack */
@@ -176,14 +182,15 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
 	if (nonewline) {
 	    fprintf(stderr, "WARN: Msgpack output cannot be 'nonewline'd\n");
 	}
-	if (show_keys == 1 && strlen(key) > 0)
-	    printf("%s%s=", nodepath, key);
-	printf("%s", result);
+	if (show_keys == 1 && strlen(key) > 0) {
+	    fprintf(output, "%s%s=", nodepath, key);
+	}
+	fprintf(output, "%s", result);
 	free(result);
 	if (nonewline) {
 	    firstline = false;
-	} else {
-	    printf("\n");
+	} else if (hasnewline == false) {
+	    fprintf(output, "\n");
 	}
 	break;
     default:
@@ -193,6 +200,107 @@ output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey)
     }
 
     free(key);
+}
+
+FILE *
+output_open(const char *output_filename)
+{
+    FILE *out;
+    
+    out = fopen(output_filename, "w");
+    if (outfile == NULL) {
+	fprintf(stderr, "Failed to open file for writing\n");
+	cleanup();
+	exit(7);
+    }
+    
+    return out;
+}
+
+void
+output_close(FILE *out)
+{
+    int success;
+    
+    /* Make sure everything is on disk */
+    success = fsync(fileno(out));
+    if (success != 0) {
+	fprintf(stderr, "Failed to sync file\n");
+	cleanup();
+	exit(7);
+    }
+    success = fclose(out);
+    if (success != 0) {
+	fprintf(stderr, "Failed to close file\n");
+	cleanup();
+	exit(7);
+    }
+    out = NULL;
+}
+
+int
+replace_file(const ucl_object_t *obj, char *nodepath, const char *inkey,
+    const char *output_filename)
+{
+    int success = 0, fd;
+    char *tmp_filename;
+    FILE *out;
+    struct stat fst;
+
+    if (output_filename == NULL) {
+	fprintf(stderr, "Invalid output filename: %s\n", output_filename);
+	return -1;
+    }
+
+    uclcmd_asprintf(&tmp_filename, "%s.XXXXXXXXXX", output_filename);
+
+    fd = mkostemp(tmp_filename, O_DIRECT | O_EXLOCK);
+    if (fd == -1) {
+	fprintf(stderr, "Failed to open a temporary file for writing\n");
+	cleanup();
+	exit(7);
+    }
+    out = fdopen(fd, "w");
+    if (outfile == NULL) {
+	fprintf(stderr, "Failed to open a temporary file for writing\n");
+	cleanup();
+	exit(7);
+    }
+
+    /* Set permissions to make the original file */
+    success = stat(output_filename ,&fst);
+    /*
+     * If the output file does not exist, use default permissions,
+     * otherwise, copy the permissions from the file we are overwriting
+     */
+    if (success == 0) {
+	fchown(fd, fst.st_uid, fst.st_gid);
+	fchmod(fd, fst.st_mode);
+    }
+    
+    output = out;
+
+    output_chunk(obj, nodepath, inkey);
+
+    /* Make sure everything is on disk */
+    success = fsync(fd);
+    if (success != 0) {
+	fprintf(stderr, "Failed to sync file\n");
+	cleanup();
+	exit(7);
+    }
+    success = fclose(out);
+    output = stdout;
+
+    /* Rename the file into place over the old file */
+    success = rename(tmp_filename, output_filename);
+    if (success != 0) {
+	fprintf(stderr, "Failed to rename the temporary file\n");
+	cleanup();
+	exit(7);
+    }
+
+    return success;
 }
 
 void
@@ -209,17 +317,17 @@ output_key(const ucl_object_t *obj, char *nodepath, const char *inkey)
     replace_sep(nodepath, input_sepchar, output_sepchar);
     replace_sep(key, input_sepchar, output_sepchar);
     if (firstline == false) {
-	printf(" ");
+	fprintf(output, " ");
     }
     if (obj == NULL) {
 	if (show_keys == 1) {
-	    printf("%s%s=", nodepath, key);
+	    fprintf(output, "%s%s=", nodepath, key);
 	}
-	printf("null");
+	fprintf(output, "null");
 	if (nonewline) {
 	    firstline = false;
 	} else {
-	    printf("\n");
+	    fprintf(output, "\n");
 	}
 	return;
     }
@@ -230,8 +338,8 @@ output_key(const ucl_object_t *obj, char *nodepath, const char *inkey)
 		"value={object}\n", obj->key, obj->len);
 	}
 	if (show_keys == 1)
-	    printf("%s%s=", nodepath, key);
-	printf("{object}");
+	    fprintf(output, "%s%s=", nodepath, key);
+	fprintf(output, "{object}");
 	break;
     case UCL_ARRAY:
 	if (debug >= 3) {
@@ -239,8 +347,8 @@ output_key(const ucl_object_t *obj, char *nodepath, const char *inkey)
 		"value=[array]\n", obj->key, obj->len);
 	}
 	if (show_keys == 1)
-	    printf("%s%s=", nodepath, key);
-	printf("[array]");
+	    fprintf(output, "%s%s=", nodepath, key);
+	fprintf(output, "[array]");
 	break;
     case UCL_INT:
 	if (debug >= 3) {
@@ -248,8 +356,8 @@ output_key(const ucl_object_t *obj, char *nodepath, const char *inkey)
 		obj->key, obj->len, (intmax_t)ucl_object_toint(obj));
 	}
 	if (show_keys == 1)
-	    printf("%s%s=", nodepath, key);
-	printf("%jd", (intmax_t)ucl_object_toint(obj));
+	    fprintf(output, "%s%s=", nodepath, key);
+	fprintf(output, "%jd", (intmax_t)ucl_object_toint(obj));
 	break;
     case UCL_FLOAT:
 	if (debug >= 3) {
@@ -257,8 +365,8 @@ output_key(const ucl_object_t *obj, char *nodepath, const char *inkey)
 		obj->key, obj->len, ucl_object_todouble(obj));
 	}
 	if (show_keys == 1)
-	    printf("%s%s=", nodepath, key);
-	printf("%f", ucl_object_todouble(obj));
+	    fprintf(output, "%s%s=", nodepath, key);
+	fprintf(output, "%f", ucl_object_todouble(obj));
 	break;
     case UCL_STRING:
 	if (debug >= 3) {
@@ -266,11 +374,11 @@ output_key(const ucl_object_t *obj, char *nodepath, const char *inkey)
 		"value=\"%s\"\n", obj->key, obj->len, ucl_object_tostring(obj));
 	}
 	if (show_keys == 1)
-	    printf("%s%s=", nodepath, key);
+	    fprintf(output, "%s%s=", nodepath, key);
 	if (show_raw == 1)
-	    printf("%s", ucl_object_tostring(obj));
+	    fprintf(output, "%s", ucl_object_tostring(obj));
 	else
-	    printf("\"%s\"", ucl_object_tostring(obj));
+	    fprintf(output, "\"%s\"", ucl_object_tostring(obj));
 	break;
     case UCL_BOOLEAN:
 	if (debug >= 3) {
@@ -279,8 +387,8 @@ output_key(const ucl_object_t *obj, char *nodepath, const char *inkey)
 		ucl_object_tostring_forced(obj));
 	}
 	if (show_keys == 1)
-	    printf("%s%s=", nodepath, key);
-	printf("%s", ucl_object_tostring_forced(obj));
+	    fprintf(output, "%s%s=", nodepath, key);
+	fprintf(output, "%s", ucl_object_tostring_forced(obj));
 	break;
     case UCL_TIME:
 	if (debug >= 3) {
@@ -288,8 +396,8 @@ output_key(const ucl_object_t *obj, char *nodepath, const char *inkey)
 		obj->key, obj->len, ucl_object_todouble(obj));
 	}
 	if (show_keys == 1)
-	    printf("%s%s=", nodepath, key);
-	printf("%f", ucl_object_todouble(obj));
+	    fprintf(output, "%s%s=", nodepath, key);
+	fprintf(output, "%f", ucl_object_todouble(obj));
 	break;
     case UCL_USERDATA:
 	if (debug >= 3) {
@@ -297,12 +405,12 @@ output_key(const ucl_object_t *obj, char *nodepath, const char *inkey)
 		"value=%p\n", obj->key, obj->len, obj->value.ud);
 	}
 	if (show_keys == 1)
-	    printf("%s%s=", nodepath, key);
-	printf("{userdata}");
+	    fprintf(output, "%s%s=", nodepath, key);
+	fprintf(output, "{userdata}");
 	break;
     default:
 	if (debug >= 3) {
-	    printf("error=Object of unknown type\n");
+	    fprintf(output, "error=Object of unknown type\n");
 	    fprintf(stderr, "DEBUG: key=%s\nlen=%u\ntype=UCL_ERROR\n"
 		"value=null\n", obj->key, obj->len);
 	}
@@ -311,7 +419,7 @@ output_key(const ucl_object_t *obj, char *nodepath, const char *inkey)
     if (nonewline) {
 	firstline = false;
     } else {
-	printf("\n");
+	fprintf(output, "\n");
     }
 
     free(key);

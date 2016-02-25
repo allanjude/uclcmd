@@ -1,9 +1,6 @@
 rootkey {
     subkey {
-        key [
-            "value",
-            "merged",
-        ]
+        key = "value";
         child = "value";
     }
     array [
@@ -11,4 +8,5 @@ rootkey {
         "b",
         "c",
     ]
+    new = 5000000000;
 }

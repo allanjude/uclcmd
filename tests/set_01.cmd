@@ -1,1 +1,1 @@
-set --ucl rootkey.subkey.key newvalue
+set -n --ucl rootkey.subkey.key newvalue

@@ -31,13 +31,15 @@
 int
 set_main(int argc, char *argv[])
 {
-    const char *filename = NULL;
     int ret = 0, ch;
     bool success = false;
     ucl_type_t want_type = UCL_NULL;
 
     /* Initialize parser */
     parser = ucl_parser_new(UCLCMD_PARSER_FLAGS | UCL_PARSER_DISABLE_MACRO);
+
+    /* Set the default output type */
+    output_type = UCL_EMIT_CONFIG;
 
     /*	options	descriptor */
     static struct option longopts[] = {
@@ -56,6 +58,7 @@ set_main(int argc, char *argv[])
 	{ "noop",	no_argument,		&noop,		1 },
 	{ "nonewline",	no_argument,		&nonewline,	1 },
 	{ "noquotes",	no_argument,		&show_raw,	1 },
+	{ "output",	required_argument,	NULL,		'o' },
 	{ "shellvars",	no_argument,		NULL,		'l' },
 	{ "type",	required_argument,	NULL,		't' },
 	{ "ucl",	no_argument,		&output_type,
@@ -64,7 +67,7 @@ set_main(int argc, char *argv[])
 	{ NULL,		0,			NULL,		0 }
     };
 
-    while ((ch = getopt_long(argc, argv, "cdD:ef:i:jklmnNqt:uy", longopts, NULL)) != -1) {
+    while ((ch = getopt_long(argc, argv, "cdD:ef:i:jklmnNo:qt:uy", longopts, NULL)) != -1) {
 	switch (ch) {
 	case 'c':
 	    output_type = UCL_EMIT_JSON_COMPACT;
@@ -113,6 +116,10 @@ set_main(int argc, char *argv[])
 	case 'N':
 	    nonewline = 1;
 	    break;
+	case 'o':
+	    outfile = optarg;
+	    output = output_open(outfile);
+	    break;
 	case 'q':
 	    show_raw = 1;
 	    break;
@@ -151,7 +158,21 @@ set_main(int argc, char *argv[])
     }
 
     if (success) {
-	get_mode("");
+	if (noop == 0) {
+	    if (outfile == NULL && filename != NULL) {
+		outfile = filename;
+		success = replace_file(root_obj, "", "", outfile);
+		if (success != 0) {
+		    fprintf(stderr, "Error: failed to write the changes to %s\n",
+			outfile);
+		    exit(7);
+		}
+	    } else {
+		output_chunk(root_obj, "", "");
+	    }
+	} else {
+	    get_mode("");
+	}
     } else {
 	fprintf(stderr, "Error: Failed to apply the set operation.\n");
 	ret = 1;
@@ -159,9 +180,6 @@ set_main(int argc, char *argv[])
 
     cleanup();
 
-    if (nonewline) {
-	printf("\n");
-    }
     return(ret);
 }
 
@@ -172,12 +190,19 @@ set_mode(char *destination_node, char *data, ucl_type_t want_type)
     ucl_object_t *sub_obj = NULL;
     ucl_object_t *old_obj = NULL;
     int success = 0;
+    char *dst_frag;
 
     setparser = ucl_parser_new(UCLCMD_PARSER_FLAGS);
 
     /* Lookup the destination to write to */
     dst_obj = get_parent(destination_node);
     sub_obj = get_object(destination_node);
+
+    if (sub_obj == NULL) {
+	fprintf(stderr, "Failed to find destination node: %s\n",
+	    destination_node);
+	return false;
+    }
 
     if (include_file != NULL) {
 	/* get UCL to add from file */
@@ -267,8 +292,12 @@ set_mode(char *destination_node, char *data, ucl_type_t want_type)
 	    ucl_object_key(sub_obj), ucl_object_key(dst_obj));
     }
 
-    char *dst_frag = strrchr(destination_node, input_sepchar);
-    dst_frag++;
+    dst_frag = strrchr(destination_node, input_sepchar);
+    if (dst_frag == NULL) {
+	dst_frag = destination_node;
+    } else {
+	dst_frag++;
+    }
     /* Replace it in the object here */
     if (ucl_object_type(dst_obj) == UCL_ARRAY) {
 	/* XXX TODO: What if the destination_node only points to an array */
