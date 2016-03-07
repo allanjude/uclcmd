@@ -1,0 +1,6 @@
+vm1 {
+	cpus = 1
+	origin = 5
+	mode = replace
+}
+.include(duplicate=rewrite, path=[tests/]) include-rewrite-same_01.ucl

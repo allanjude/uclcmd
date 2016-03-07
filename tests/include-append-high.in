@@ -1,0 +1,7 @@
+.priority 2
+vm1 {
+	cpus = 1
+	origin = 1
+	mode = append
+}
+.include(duplicate=append, priority=3, path=[tests/]) include-append-high_01.ucl

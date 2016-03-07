@@ -1,0 +1,6 @@
+vm1 {
+	cpus = 1
+	origin = 1
+	mode = append
+}
+.include(duplicate=append, path=[tests/]) include-append-same_01.ucl
