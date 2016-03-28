@@ -1,6 +1,6 @@
 # Debugging on
 CFLAGS?=-g -O0
-CFLAGS+=-Wall $(INCLUDES)
+CFLAGS+=-Wall
 CFLAGS+=`pkg-config --cflags libucl`
 LIBS+=`pkg-config --libs libucl`
 PREFIX?=/usr/local
