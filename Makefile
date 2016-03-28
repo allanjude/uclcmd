@@ -1,10 +1,9 @@
 # Debugging on
-INCLUDES=-I/usr/include -I/usr/local/include
-LDFLAGS=-L/usr/lib -L/usr/local/lib
-CFLAGS?= -g -O0 -Wall
-CFLAGS+=$(INCLUDES)
+CFLAGS?=-g -O0
+CFLAGS+=-Wall
+CFLAGS+=`pkg-config --cflags libucl`
+LIBS+=`pkg-config --libs libucl`
 PREFIX?=/usr/local
-LIBS= -lucl
 SRCS=uclcmd.c uclcmd_common.c uclcmd_get.c uclcmd_merge.c \
 	uclcmd_output.c uclcmd_parse.c uclcmd_remove.c uclcmd_set.c
 OBJS=$(SRCS:.c=.o)
