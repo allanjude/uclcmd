@@ -254,7 +254,11 @@ replace_file(const ucl_object_t *obj, char *nodepath, const char *inkey,
 
     uclcmd_asprintf(&tmp_filename, "%s.XXXXXXXXXX", output_filename);
 
+#ifdef mkostemp
     fd = mkostemp(tmp_filename, O_DIRECT | O_EXLOCK);
+#else
+    fd = mkstemp(tmp_filename);
+#endif
     if (fd == -1) {
 	fprintf(stderr, "Failed to open a temporary file for writing\n");
 	cleanup();
