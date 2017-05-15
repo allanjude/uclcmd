@@ -68,6 +68,13 @@ parse_input(struct ucl_parser *parser, FILE *source)
     success = ucl_parser_add_chunk(parser, inbuf, r);
     fclose(source);
 
+    if (ucl_parser_get_error_code(parser) == UCL_EMERGE) {
+	fprintf(stderr, "Error: Parse Error occured: %s\n",
+	    ucl_parser_get_error(parser));
+	cleanup();
+	exit(3);
+    }
+
     if (success == false) {
 	/* There must be a better way to detect a string */
 	ucl_parser_clear_error(parser);
@@ -95,6 +102,14 @@ parse_string(struct ucl_parser *parser, char *data)
     bool success = false;
 
     success = ucl_parser_add_string(parser, data, 0);
+
+    if (ucl_parser_get_error_code(parser) == UCL_EMERGE) {
+	fprintf(stderr, "Error: Parse Error occured: %s\n",
+	    ucl_parser_get_error(parser));
+	cleanup();
+	exit(3);
+    }
+
     if (success == false) {
 	/* There must be a better way to detect a string */
 	ucl_parser_clear_error(parser);
