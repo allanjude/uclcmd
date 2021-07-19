@@ -1,0 +1,43 @@
+---
+
+- block:
+    - ucl:
+        path: "{{ tests_dir }}/get.in"
+        upath: "."
+        format: yaml
+      register: result
+    - debug:
+        msg: "{{ result.stdout }}"
+  tags: test-get-yaml-1
+
+- block:
+    - ucl:
+        path: "{{ tests_dir }}/get.in"
+        upath: "."
+        format: json
+      register: result
+    - debug:
+        msg: "{{ result.stdout }}"
+  tags: test-get-json-1
+
+- block:
+    - ucl:
+        path: "{{ tests_dir }}/get.in"
+        upath: "."
+        format: cjson
+      register: result
+    - debug:
+        msg: "{{ result.stdout }}"
+  tags: test-get-cjson-1
+
+- block:
+    - ucl:
+        path: "{{ tests_dir }}/get.in"
+        upath: "."
+        format: msgpack
+      register: result
+    - debug:
+        msg: "{{ result.stdout }}"
+  tags: test-get-msgpack-1
+
+# EOF

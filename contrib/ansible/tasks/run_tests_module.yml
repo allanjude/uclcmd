@@ -1,0 +1,78 @@
+- debug:
+    msg: "Input: {{ test_in }}"
+  when: debug|default(false)|bool
+
+- find:
+    path: "{{ tests_dir }}"
+    patterns: "{{ (test_in|basename|splitext).0 }}_*.ansible"
+  register: tests_ansible
+  delegate_to: localhost
+- debug:
+    var: tests_ansible.files|map(attribute='path')|list
+  when: debug|default(false)|bool
+
+- set_fact:
+    _tests: {}
+- set_fact:
+    _tests: "{{ _tests|combine({item: {'mod': _mod,
+                                       'res': _res}}) }}"
+  loop: "{{ tests_ansible.files|map(attribute='path')|list }}"
+  vars:
+    _mod: "{{ lookup('file', item)|from_yaml }}"
+    _res: "{{ tests_dir }}/{{ (item|basename|splitext).0 }}.res"
+- debug:
+    var: _tests
+  when: debug|default(false)|bool
+
+- ucl:
+    path: "{{ test_in }}"
+    uclstring: "{{ item.value.mod.ucl.uclstring|default(omit) }}"
+    upath: "{{ item.value.mod.ucl.upath|default(omit) }}"
+    ipath: "{{ item.value.mod.ucl.ipath|default(omit) }}"
+    value: "{{ item.value.mod.ucl.value|default(omit) }}"
+    merge: "{{ item.value.mod.ucl.merge|default(omit) }}"
+    state: "{{ item.value.mod.ucl.state|default(omit) }}"
+    delimiter: "{{ item.value.mod.ucl.delimiter|default(omit) }}"
+    format: "{{ item.value.mod.ucl.format|default(omit) }}"
+  register: tests_res
+  loop: "{{ _tests|dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+- debug:
+    var: tests_res
+  when: debug|default(false)|bool
+
+- debug:
+    msg: "{{ msg.split('\n') }}"
+  loop: "{{ tests_res.results }}"
+  loop_control:
+    label: "{{ item.item.key }}"
+  vars:
+    res: "{{ lookup('file', item.item.value.res)|string }}"
+    msg: |-
+      {{ item.stdout|type_debug }}
+      {{ item.stdout|trim }}
+      {{ res|type_debug }}
+      {{ res|trim }}
+  when: debug|default(false)|bool
+
+- shell:
+    cmd: bash -c 'diff -B <(echo "{{ item.stdout }}") <(echo "{{ res }}")'
+#   cmd: bash -c 'diff -EZbwB <(echo "{{ item.stdout }}") <(echo "{{ res }}")'
+  register: tests_dif
+  loop: "{{ tests_res.results }}"
+  loop_control:
+    label: "{{ item.item.key }}"
+  vars:
+    res: "{{ lookup('file', item.item.value.res)|string }}"
+  delegate_to: localhost
+ 
+- debug:
+    var: tests_dif
+  when: debug|default(false)|bool
+- debug:
+    msg: "{{ (_rc|int == 0)|ternary('[OK]  *** ' ~ _set ~ ' *** Passed.',
+                                    '[ERR] *** ' ~ _set ~ ' *** Failed.') }}"
+  vars:
+    _rc: "{{ tests_dif.results|map(attribute='rc')|map('int')|sum }}"
+    _set: "{{ (test_in|basename|splitext).0 }}"

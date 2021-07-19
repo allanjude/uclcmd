@@ -1,0 +1,3 @@
+ucl:
+  upath: 'rootkey.subkey.key'
+  value: 'newvalue'

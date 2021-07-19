@@ -1,0 +1,62 @@
+Ansible module ucl test setup
+=============================
+
+Clone vbotka.uclcmd
+-------------------
+shell> git remote -v
+origin	     https://github.com/vbotka/uclcmd.git (fetch)
+origin	     https://github.com/vbotka/uclcmd.git (push)
+upstream     https://github.com/allanjude/uclcmd (fetch)
+upstream     https://github.com/allanjude/uclcmd (push)
+
+
+
+Clone vbotka.ansible.community.general
+--------------------------------------
+shell> pwd
+/scratch/vbotka.ansible.community.general
+shell> git remote -v
+origin	     https://github.com/vbotka/community.general.git (fetch)
+origin	     https://github.com/vbotka/community.general.git (push)
+upstream     https://github.com/ansible-collections/community.general.git (fetch)
+upstream     https://github.com/ansible-collections/community.general.git (push)
+
+Checkout branch ucl
+-------------------
+shell> git status
+On branch ucl
+Your branch is up to date with 'origin/ucl'.
+
+nothing to commit, working tree clean
+
+Configure Ansible path to modules, utils, and filters
+-----------------------------------------------------
+shell> grep vbotka.ansible.community.general ansible.cfg
+library = /scratch/vbotka.ansible.community.general/plugins/modules: ...
+module_utils = /scratch/vbotka.ansible.community.general/plugins/module_utils: ...
+filter_plugins = /scratch/vbotka.ansible.community.general/plugins/filter/: ...
+
+Fit Ansible inventory and test connection
+-----------------------------------------
+shell> cat hosts
+host1 ansible_hostname=10.1.0.17
+
+[test_ucl]
+host1
+
+[test_ucl:vars]
+ansible_connection=ssh
+ansible_user=asadmin
+ansible_become=yes
+ansible_become_user=root
+ansible_become_method=sudo
+ansible_python_interpreter=/usr/local/bin/python3.8
+ansible_perl_interpreter=/usr/local/bin/perl
+
+shell> ansible host1 -m setup | grep ansible_kernel_version
+        "ansible_kernel_version": "FreeBSD 13.0-RELEASE #0 ...
+
+Install uclcmd at the remote host(s)
+------------------------------------
+shell> ssh asadmin@10.1.0.17 which uclcmd
+/usr/local/bin/uclcmd

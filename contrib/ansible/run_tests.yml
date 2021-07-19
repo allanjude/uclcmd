@@ -1,0 +1,67 @@
+- hosts: test_ucl
+  gather_facts: false
+  vars:
+    tests_dir_local: "{{ playbook_dir }}/tests"  # at controller (localhost)
+    tests_dir: /scratch/uclcmd/tests             # at remote host(s)
+    run_dir: /scratch/uclcmd                     # at remote host(s)
+#   patterns: '*.in*'
+#   patterns: 'get.in*'
+    patterns: 'set.in*'
+  tasks:
+
+# Find test files - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    - block:
+        - find:
+            paths: "{{ tests_dir }}"
+            patterns: "{{ patterns }}"
+          register: tests_in
+        - debug:
+            var: tests_in.files|map(attribute='path')|list
+          when: debug|default(false)|bool
+      tags: [tests-command, tests-module]
+
+# Command uclcmd. All tests. - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    - include_tasks:
+        file: run_tests_command.yml
+        apply:
+          tags: tests-command
+      loop: "{{ tests_in.files|map(attribute='path')|list }}"
+      loop_control:
+        loop_var: test_in
+      tags: tests-command
+
+# Module ucl. All tests. - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    - include_tasks:
+        file: run_tests_module.yml
+        apply:
+          tags: tests-module
+      loop: "{{ tests_in.files|map(attribute='path')|list }}"
+      loop_control:
+        loop_var: test_in
+      tags: tests-module
+
+# Format - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    - include_tasks:
+        file: run_tests_module_get_format.yml
+        apply:
+          tags: tests-module-get-format
+      tags: tests-module-get-format
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    - block:
+        - ucl:
+            path: "{{ tests_dir }}/set.in"
+            upath: "rootkey.subkey.child"
+            state: absent
+            format: ucl
+          register: result
+        - debug:
+            msg: "{{ result }}"
+        - debug:
+            msg: "{{ result.stdout }}"
+      tags: test-remove-1
