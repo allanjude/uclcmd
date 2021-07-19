@@ -1,6 +1,9 @@
 Ansible module ucl test setup
 =============================
 
+Install Ansible
+---------------
+<TBD>
 
 Clone vbotka.uclcmd
 -------------------
@@ -76,6 +79,20 @@ shell> grep vbotka.ansible.community.general ansible.cfg
 library = /scratch/vbotka.ansible.community.general/plugins/modules: ...
 module_utils = /scratch/vbotka.ansible.community.general/plugins/module_utils: ...
 filter_plugins = /scratch/vbotka.ansible.community.general/plugins/filter: ...
+
+
+Install collection community.general
+------------------------------------
+shell> pwd
+/scratch/vbotka.uclcmd/contrib/ansible
+
+shell> ansible-galaxy collection install community.general
+Starting galaxy collection install process
+Process install dependency map
+Starting collection install process
+Installing 'community.general:3.3.2' to '/scratch/vbotka.uclcmd/contrib/ansible/collections/ansible_collections/community/general'
+Downloading https://galaxy.ansible.com/download/community-general-3.3.2.tar.gz to /home/vlado/.ansible/tmp/ansible-local-64449bqwn7jid/tmprxhwr35o
+community.general (3.3.2) was installed successfully
 
 
 Fit Ansible inventory and test connection
@@ -186,6 +203,88 @@ https://gist.github.com/vbotka/73c0647538f565f4bfb67b244c934e78
 Enable debug to see details
 ---------------------------
 shell> ansible-playbook run_tests.yml -t tests-module -e debug=true
+
+shell> pwd
+/scratch/vbotka.uclcmd/contrib/ansible
+
+shell> ansible-playbook run_tests.yml -e debug=true -t test-remove-1 -C
+
+PLAY [test_ucl] **************************************************************************************************
+
+TASK [ucl] *******************************************************************************************************
+ok: [host1]
+
+TASK [debug] *****************************************************************************************************
+ok: [host1] =>
+  msg:
+  - 'changed: false'
+  - 'cmd: /usr/local/bin/uclcmd remove -n -u -f /scratch/vbotka.uclcmd/tests/set.in rootkey.subkey.child'
+  - 'diff:'
+  - '    after:'
+  - '    - rootkey {'
+  - '    - ''    subkey {'''
+  - '    - ''        key = "value";'''
+  - '    - ''    }'''
+  - '    - ''    array ['''
+  - '    - ''        "a",'''
+  - '    - ''        "b",'''
+  - '    - ''        "c",'''
+  - '    - ''    ]'''
+  - '    - ''}'''
+  - '    before:'
+  - '    - rootkey {'
+  - '    - ''    subkey {'''
+  - '    - ''        key = "value";'''
+  - '    - ''        child = "value";'''
+  - '    - ''    }'''
+  - '    - ''    array ['''
+  - '    - ''        "a",'''
+  - '    - ''        "b",'''
+  - '    - ''        "c",'''
+  - '    - ''    ]'''
+  - '    - ''}'''
+  - '    diff:'
+  - '    - ''  rootkey {'''
+  - '    - ''      subkey {'''
+  - '    - ''          key = "value";'''
+  - '    - ''-         child = "value";'''
+  - '    - ''      }'''
+  - '    - ''      array ['''
+  - '    - ''          "a",'''
+  - '    - ''          "b",'''
+  - '    - ''          "c",'''
+  - '    - ''      ]'''
+  - '    - ''  }'''
+  - 'failed: false'
+  - 'message: '''''
+  - 'rc: 0'
+  - 'stderr: '''''
+  - 'stderr_lines: []'
+  - 'stdout: |-'
+  - '    rootkey {'
+  - '        subkey {'
+  - '            key = "value";'
+  - '        }'
+  - '        array ['
+  - '            "a",'
+  - '            "b",'
+  - '            "c",'
+  - '        ]'
+  - '    }'
+  - 'stdout_lines:'
+  - '- rootkey {'
+  - '- ''    subkey {'''
+  - '- ''        key = "value";'''
+  - '- ''    }'''
+  - '- ''    array ['''
+  - '- ''        "a",'''
+  - '- ''        "b",'''
+  - '- ''        "c",'''
+  - '- ''    ]'''
+  - '- ''}'''
+
+PLAY RECAP *******************************************************************************************************
+host1                      : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
 
 
 # EOF

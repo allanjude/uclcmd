@@ -61,7 +61,8 @@
             format: ucl
           register: result
         - debug:
-            msg: "{{ result }}"
-        - debug:
-            msg: "{{ result.stdout }}"
+            msg: "{{ msg.splitlines() }}"
+          vars:
+            msg: |-
+              {{ result|to_nice_yaml }}
       tags: test-remove-1
