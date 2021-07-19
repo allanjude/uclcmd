@@ -1,7 +1,0 @@
-notification/mqtt
-shippable/posix/group1
-skip/aix
-skip/osx
-skip/macos
-skip/freebsd
-skip/rhel
