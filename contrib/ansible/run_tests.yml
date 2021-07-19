@@ -2,8 +2,8 @@
   gather_facts: false
   vars:
     tests_dir_local: "{{ playbook_dir }}/tests"  # at controller (localhost)
-    tests_dir: /scratch/uclcmd/tests             # at remote host(s)
-    run_dir: /scratch/uclcmd                     # at remote host(s)
+    tests_dir: /scratch/vbotka.uclcmd/tests      # at remote host(s)
+    run_dir: /scratch/vbotka.uclcmd              # at remote host(s)
 #   patterns: '*.in*'
 #   patterns: 'get.in*'
     patterns: 'set.in*'
@@ -24,7 +24,7 @@
 # Command uclcmd. All tests. - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     - include_tasks:
-        file: run_tests_command.yml
+        file: tasks/run_tests_command.yml
         apply:
           tags: tests-command
       loop: "{{ tests_in.files|map(attribute='path')|list }}"
@@ -35,7 +35,7 @@
 # Module ucl. All tests. - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     - include_tasks:
-        file: run_tests_module.yml
+        file: tasks/run_tests_module.yml
         apply:
           tags: tests-module
       loop: "{{ tests_in.files|map(attribute='path')|list }}"
@@ -46,7 +46,7 @@
 # Format - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     - include_tasks:
-        file: run_tests_module_get_format.yml
+        file: tasks/run_tests_module_get_format.yml
         apply:
           tags: tests-module-get-format
       tags: tests-module-get-format

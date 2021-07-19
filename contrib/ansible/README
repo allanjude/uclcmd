@@ -1,6 +1,7 @@
 Ansible module ucl test setup
 =============================
 
+
 Clone vbotka.uclcmd
 -------------------
 shell> pwd
@@ -23,6 +24,7 @@ origin	     https://github.com/vbotka/uclcmd.git (push)
 upstream     https://github.com/allanjude/uclcmd (fetch)
 upstream     https://github.com/allanjude/uclcmd (push)
 
+
 Checkout branch ansible
 -----------------------
 shell> git checkout ansible
@@ -31,6 +33,7 @@ On branch ansible
 Your branch is up to date with 'origin/ansible'.
 
 nothing to commit, working tree clean
+
 
 Clone vbotka.ansible.community.general
 --------------------------------------
@@ -54,6 +57,7 @@ origin	     https://github.com/vbotka/community.general.git (push)
 upstream     https://github.com/ansible-collections/community.general.git (fetch)
 upstream     https://github.com/ansible-collections/community.general.git (push)
 
+
 Checkout branch ucl
 -------------------
 shell> git status
@@ -61,6 +65,7 @@ On branch ucl
 Your branch is up to date with 'origin/ucl'.
 
 nothing to commit, working tree clean
+
 
 Configure Ansible path to modules, utils, and filters
 -----------------------------------------------------
@@ -71,6 +76,7 @@ shell> grep vbotka.ansible.community.general ansible.cfg
 library = /scratch/vbotka.ansible.community.general/plugins/modules: ...
 module_utils = /scratch/vbotka.ansible.community.general/plugins/module_utils: ...
 filter_plugins = /scratch/vbotka.ansible.community.general/plugins/filter/: ...
+
 
 Fit Ansible inventory and test connection
 -----------------------------------------
@@ -95,7 +101,85 @@ ansible_perl_interpreter=/usr/local/bin/perl
 shell> ansible host1 -m setup | grep ansible_kernel_version
         "ansible_kernel_version": "FreeBSD 13.0-RELEASE #0 ...
 
+
 Install uclcmd at the remote host(s)
 ------------------------------------
 shell> ssh asadmin@10.1.0.17 which uclcmd
 /usr/local/bin/uclcmd
+
+
+Clone vbotka.uclcmd at the remote host(s) and checkout branch ansible
+---------------------------------------------------------------------
+shell> ssh asadmin@10.1.0.17 cd /scratch/vbotka.uclcmd; git status
+On branch ansible
+Your branch is up to date with 'origin/ansible'.
+
+nothing to commit, working tree clean
+
+
+Disable module from_csv.py. Seems to be broken. We don't need it.
+----------------------------------------------------------------
+If Ansible shows WARNING]: Skipping plugin ... filter/from_csv.py) as
+it seems to be invalid: No module named 'ansible_collections.community'
+
+shell> pwd
+/scratch/vbotka.ansible.community.general/plugins/filter
+
+shell> mv from_csv.py from_csv.py.broken
+
+
+Link tests directory to current
+-------------------------------
+shell> pwd
+/scratch/vbotka.uclcmd/contrib/ansible
+
+shell> ln -s ../../tests tests
+
+
+Update variables of the playbook to your setting
+------------------------------------------------
+shell> pwd
+/scratch/vbotka.uclcmd/contrib/ansible
+
+shell> grep _dir run_tests.yml 
+    tests_dir_local: "{{ playbook_dir }}/tests"  # at controller (localhost)
+    tests_dir: /scratch/vbotka.uclcmd/tests      # at remote host(s)
+    run_dir: /scratch/vbotka.uclcmd              # at remote host(s)
+
+
+Select patterns you want to test
+--------------------------------
+shell> grep patterns run_tests.yml 
+#   patterns: '*.in*'
+    patterns: 'get.in*'
+#   patterns: 'set.in*'
+
+
+Test syntax of the playbook
+---------------------------
+shell> pwd
+/scratch/vbotka.uclcmd/contrib/ansible
+
+shell> ansible-playbook run_tests.yml --syntax-check
+
+playbook: run_tests.yml
+
+
+List available tags
+-------------------
+shell> ansible-playbook run_tests.yml --list-tags
+
+playbook: run_tests.yml
+
+  play #1 (test_ucl): test_ucl	TAGS: []
+      TASK TAGS: [test-remove-1, tests-command, tests-module, tests-module-get-format]
+
+
+Test ucl module
+---------------
+shell> ansible-playbook run_tests.yml -t tests-module
+
+See output
+https://gist.github.com/vbotka/73c0647538f565f4bfb67b244c934e78
+
+# EOF
