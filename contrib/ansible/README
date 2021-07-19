@@ -3,18 +3,51 @@ Ansible module ucl test setup
 
 Clone vbotka.uclcmd
 -------------------
+shell> pwd
+/scratch
+
+shell> git clone https://github.com/vbotka/uclcmd.git
+Cloning into 'uclcmd'...
+remote: Enumerating objects: 573, done.
+remote: Counting objects: 100% (25/25), done.
+remote: Compressing objects: 100% (13/13), done.
+remote: Total 573 (delta 2), reused 23 (delta 2), pack-reused 548
+Receiving objects: 100% (573/573), 157.22 KiB | 1.40 MiB/s, done.
+Resolving deltas: 100% (318/318), done.
+
+shell> mv uclcmd vbotka.uclcmd
+shell> cd vbotka.uclcmd
 shell> git remote -v
 origin	     https://github.com/vbotka/uclcmd.git (fetch)
 origin	     https://github.com/vbotka/uclcmd.git (push)
 upstream     https://github.com/allanjude/uclcmd (fetch)
 upstream     https://github.com/allanjude/uclcmd (push)
 
+Checkout branch ansible
+-----------------------
+shell> git checkout ansible
+shell> git status
+On branch ansible
+Your branch is up to date with 'origin/ansible'.
 
+nothing to commit, working tree clean
 
 Clone vbotka.ansible.community.general
 --------------------------------------
 shell> pwd
-/scratch/vbotka.ansible.community.general
+/scratch
+
+shell> git clone https://github.com/vbotka/community.general.git
+Cloning into 'community.general'...
+remote: Enumerating objects: 26350, done.
+remote: Counting objects: 100% (404/404), done.
+remote: Compressing objects: 100% (266/266), done.
+remote: Total 26350 (delta 204), reused 256 (delta 122), pack-reused 25946
+Receiving objects: 100% (26350/26350), 10.99 MiB | 1.84 MiB/s, done.
+Resolving deltas: 100% (15088/15088), done.
+
+shell> mv community.general vbotka.community.general
+shell> cd vbotka.community.general
 shell> git remote -v
 origin	     https://github.com/vbotka/community.general.git (fetch)
 origin	     https://github.com/vbotka/community.general.git (push)
@@ -31,6 +64,9 @@ nothing to commit, working tree clean
 
 Configure Ansible path to modules, utils, and filters
 -----------------------------------------------------
+shell> pwd
+/scratch/vbotka.uclcmd/contrib/ansible
+
 shell> grep vbotka.ansible.community.general ansible.cfg
 library = /scratch/vbotka.ansible.community.general/plugins/modules: ...
 module_utils = /scratch/vbotka.ansible.community.general/plugins/module_utils: ...
@@ -38,6 +74,9 @@ filter_plugins = /scratch/vbotka.ansible.community.general/plugins/filter/: ...
 
 Fit Ansible inventory and test connection
 -----------------------------------------
+shell> pwd
+/scratch/vbotka.uclcmd/contrib/ansible
+
 shell> cat hosts
 host1 ansible_hostname=10.1.0.17
 
