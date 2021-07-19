@@ -75,7 +75,7 @@ shell> pwd
 shell> grep vbotka.ansible.community.general ansible.cfg
 library = /scratch/vbotka.ansible.community.general/plugins/modules: ...
 module_utils = /scratch/vbotka.ansible.community.general/plugins/module_utils: ...
-filter_plugins = /scratch/vbotka.ansible.community.general/plugins/filter/: ...
+filter_plugins = /scratch/vbotka.ansible.community.general/plugins/filter: ...
 
 
 Fit Ansible inventory and test connection
@@ -181,5 +181,11 @@ shell> ansible-playbook run_tests.yml -t tests-module
 
 See output
 https://gist.github.com/vbotka/73c0647538f565f4bfb67b244c934e78
+
+
+Enable debug to see details
+---------------------------
+shell> ansible-playbook run_tests.yml -t tests-module -e debug=true
+
 
 # EOF
