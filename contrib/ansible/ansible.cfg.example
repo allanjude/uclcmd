@@ -1,0 +1,25 @@
+[defaults]
+inventory = $PWD/hosts
+roles_path = $PWD/roles
+collections_paths = $PWD/collections:/scratch/dev/ansible/collections:/usr/share/ansible/collections
+# library = /scratch/dev/ansible/collections/ansible_collections/community/general/plugins/modules:/usr/share/ansible/plugins/modules
+# module_utils = /scratch/dev/ansible/collections/ansible_collections/community/general/plugins/module_utils:/usr/share/ansible/plugins/module_utils
+# filter_plugins = /scratch/dev/ansible/collections/ansible_collections/community/general/plugins/filter:/usr/share/ansible/plugins/filter
+retry_files_enabled = false
+stdout_callback = yaml
+remote_tmp = ~/.ansible/tmp
+
+[colors]
+changed = purple
+debug = bright yellow
+deprecate = blue
+diff_add = green
+diff_lines = cyan
+diff_remove = red
+error = red
+highlight = white
+ok = green
+skip = yellow
+unreachable = bright red
+verbose = blue
+warn = bright purple

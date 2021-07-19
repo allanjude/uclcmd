@@ -1,0 +1,52 @@
+---
+
+- block:
+    - community.general.ucl:
+        path: /etc/pkg/FreeBSD.conf
+        upath: freebsd.url
+      register: result
+    - set_fact:
+        freebsd_url: "{{ result.stdout }}"
+  tags: ex-set-3
+
+- block:
+    - community.general.ucl:
+        path: /etc/pkg/FreeBSD.conf
+        upath: freebsd.url
+        value: "pkg+http://pkg.FreeBSD.org/${ABI}/latest"
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+      when: debug|default(false)|bool
+  tags: ex-set-1
+
+- block:
+    - community.general.ucl:
+        path: /etc/pkg/FreeBSD.conf
+        upath: freebsd.url
+        value: "pkg+http://pkg.FreeBSD.org/${ABI}/quarterly"
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+      when: debug|default(false)|bool
+  tags: ex-set-2
+
+- block:
+    - community.general.ucl:
+        path: /etc/pkg/FreeBSD.conf
+        upath: freebsd.url
+        value: "{{ freebsd_url }}"
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+      when: debug|default(false)|bool
+  tags: ex-set-3

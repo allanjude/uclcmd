@@ -1,0 +1,28 @@
+---
+
+- block:
+    - community.general.ucl:
+        path: /etc/pkg/FreeBSD.conf
+        upath: freebsd.foo
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+      when: debug|default(false)|bool
+  tags: ex-get-1-err
+
+- block:
+    - community.general.ucl:
+        path: /etc/pkg/FreeBSD.conf
+        upath: freebsd.foo.bar
+        value: bar
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+      when: debug|default(false)|bool
+  tags: ex-set-1-err
