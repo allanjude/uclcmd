@@ -48,8 +48,9 @@
     var: tests_dif
   when: debug|default(false)|bool
 - debug:
-    msg: "{{ (_rc|int == 0)|ternary('[OK]  *** ' ~ _set ~ ' *** Passed.',
-                                    '[ERR] *** ' ~ _set ~ ' *** Failed.') }}"
+    msg: "{{ (_rc|int == 0)|
+             ternary('[OK]  *** Test group: ' ~ _set ~ ' *** Passed.',
+                     '[ERR] *** Test group: ' ~ _set ~ ' *** ' ~ _rc ~ ' item(s) failed.') }}"
   vars:
     _rc: "{{ tests_dif.results|map(attribute='rc')|map('int')|sum }}"
     _set: "{{ (test_in|basename|splitext).0 }}"

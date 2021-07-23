@@ -1,3 +1,4 @@
 ucl:
+  lang: ucl
   upath: 'rootkey.subkey.key'
-  value: 'newvalue'
+  value: newvalue

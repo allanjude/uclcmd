@@ -1,0 +1,129 @@
+---
+
+- block:
+    - ucl:
+        merge: true
+        path: "{{ tests_dir }}/merge.in"
+        ipath: "{{ tests_dir }}/merge_01.ucl"
+        upath: "rootkey.subkey"
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+  tags: test-merge-1
+
+- block:
+    - ucl:
+        merge: true
+        path: "{{ tests_dir }}/merge.in"
+        ipath: "{{ tests_dir }}/merge_02.ucl"
+        upath: "rootkey.subkey"
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+  tags: test-merge-2
+
+- block:
+    - ucl:
+        merge: true
+        path: "{{ tests_dir }}/merge.in"
+        ipath: "{{ tests_dir }}/merge_03.ucl"
+        upath: "rootkey.array"
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+  tags: test-merge-3
+
+- block:
+    - ucl:
+        merge: true
+        path: "{{ tests_dir }}/merge.in"
+        upath: "rootkey.array"
+        value: d
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+  tags: test-merge-4
+
+- block:
+    - ucl:
+        merge: true
+        path: "{{ tests_dir }}/merge.in"
+        ipath: "{{ tests_dir }}/merge_05.ucl"
+        upath: "rootkey.array"
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+  tags: test-merge-5
+
+- block:
+    - ucl:
+        merge: true
+        path: "{{ tests_dir }}/merge.in"
+        ipath: "{{ tests_dir }}/merge_06.ucl"
+        upath: "rootkey.array"
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+  tags: test-merge-6
+
+- block:
+    - ucl:
+        merge: true
+        path: "{{ tests_dir }}/merge.in"
+        upath: "rootkey.subkey.key"
+        value: merged
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+  tags: test-merge-7
+
+- block:
+    - ucl:
+        merge: true
+        path: "{{ tests_dir }}/merge.in"
+        upath: "rootkey.array.1"
+        value: merged
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+  tags: test-merge-8
+
+- block:
+    - ucl:
+        merge: true
+        path: "{{ tests_dir }}/merge.in"
+        ipath: "{{ tests_dir }}/merge_09.ucl"
+        upath: "."
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+  tags: test-merge-9
+
+# EOF

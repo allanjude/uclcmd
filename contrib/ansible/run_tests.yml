@@ -1,13 +1,24 @@
 - hosts: test_ucl
   gather_facts: false
+
   vars:
     tests_dir_local: "{{ playbook_dir }}/tests"  # at controller (localhost)
-    tests_dir: /scratch/vbotka.uclcmd/tests      # at remote host(s)
-    run_dir: /scratch/vbotka.uclcmd              # at remote host(s)
+    tests_dir: /scratch/uclcmd/tests             # at client(s) (remote host(s))
+    run_dir: /scratch/uclcmd                     # at client(s) (remote host(s))
 #   patterns: '*.in*'
-#   patterns: 'get.in*'
-    patterns: 'set.in*'
+#   patterns: 'get.in'
+#   patterns: 'set.in'
+#   patterns: 'merge.in'
+
   tasks:
+
+#    - assert:
+#        that:
+#          - patterns is defined
+#        fail_msg: |-
+#          The variable *patterns* is not defined. Set it on the command line, e.g.
+#          shell> ansible-playbook run_tests.yml -t tests-module -e patterns=get.in
+#      tags: always
 
 # Find test files - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -21,7 +32,7 @@
           when: debug|default(false)|bool
       tags: [tests-command, tests-module]
 
-# Command uclcmd. All tests. - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Command uclcmd all tests - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     - include_tasks:
         file: tasks/run_tests_command.yml
@@ -32,7 +43,7 @@
         loop_var: test_in
       tags: tests-command
 
-# Module ucl. All tests. - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Module ucl all tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     - include_tasks:
         file: tasks/run_tests_module.yml
@@ -43,7 +54,12 @@
         loop_var: test_in
       tags: tests-module
 
-# Format - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Module ucl set/merge all tests - - - - - - - - - - - - - - - - - - - - - - - -
+
+    - import_tasks: tasks/tests-module-set.yml
+    - import_tasks: tasks/tests-module-merge.yml
+
+# Module ucl get all formats - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     - include_tasks:
         file: tasks/run_tests_module_get_format.yml
@@ -51,18 +67,317 @@
           tags: tests-module-get-format
       tags: tests-module-get-format
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Module ucl get examples - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     - block:
         - ucl:
-            path: "{{ tests_dir }}/set.in"
-            upath: "rootkey.subkey.child"
-            state: absent
-            format: ucl
+            path: /etc/pkg/FreeBSD.conf
+            upath: .
           register: result
         - debug:
             msg: "{{ msg.splitlines() }}"
           vars:
             msg: |-
               {{ result|to_nice_yaml }}
-      tags: test-remove-1
+          when: debug|default(false)|bool
+      tags: ex-get-1
+
+    - block:
+        - ucl:
+            path: /etc/pkg/FreeBSD.conf
+            upath: freebsd.url
+          register: result
+        - set_fact:
+            freebsd_url: "{{ result.stdout }}"
+        - debug:
+            msg: "{{ msg.splitlines() }}"
+          vars:
+            msg: |-
+              {{ result|to_nice_yaml }}
+          when: debug|default(false)|bool
+      tags: ex-get-2
+
+    - block:
+        - ucl:
+            path: /etc/pkg/FreeBSD.conf
+            lang: yaml
+          register: result
+        - debug:
+            msg: "{{ msg.splitlines() }}"
+          vars:
+            msg: |-
+              {{ result|to_nice_yaml }}
+          when: debug|default(false)|bool
+      tags: ex-get-3
+
+# Module ucl stderr
+
+    - block:
+        - ucl:
+            path: /etc/pkg/FreeBSD.conf
+            upath: freebsd.foo
+          register: result
+        - debug:
+            msg: "{{ msg.splitlines() }}"
+          vars:
+            msg: |-
+              {{ result|to_nice_yaml }}
+          when: debug|default(false)|bool
+      tags: ex-get-1-err
+
+    - block:
+        - ucl:
+            path: /etc/pkg/FreeBSD.conf
+            upath: freebsd.foo.bar
+            value: bar
+          register: result
+        - debug:
+            msg: "{{ msg.splitlines() }}"
+          vars:
+            msg: |-
+              {{ result|to_nice_yaml }}
+          when: debug|default(false)|bool
+      tags: ex-set-1-err
+
+# Module ucl set examples - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    - block:
+        - ucl:
+            path: /etc/pkg/FreeBSD.conf
+            upath: freebsd.url
+            value: "pkg+http://pkg.FreeBSD.org/${ABI}/latest"
+          register: result
+        - debug:
+            msg: "{{ msg.splitlines() }}"
+          vars:
+            msg: |-
+              {{ result|to_nice_yaml }}
+          when: debug|default(false)|bool
+      tags: ex-set-1
+
+    - block:
+        - ucl:
+            path: /etc/pkg/FreeBSD.conf
+            upath: freebsd.url
+            value: "pkg+http://pkg.FreeBSD.org/${ABI}/quarterly"
+          register: result
+        - debug:
+            msg: "{{ msg.splitlines() }}"
+          vars:
+            msg: |-
+              {{ result|to_nice_yaml }}
+          when: debug|default(false)|bool
+      tags: ex-set-2
+
+    - block:
+        - ucl:
+            path: /etc/pkg/FreeBSD.conf
+            upath: freebsd.url
+            value: "{{ freebsd_url }}"
+          register: result
+        - debug:
+            msg: "{{ msg.splitlines() }}"
+          vars:
+            msg: |-
+              {{ result|to_nice_yaml }}
+          when: debug|default(false)|bool
+      tags: ex-set-3
+
+# Module ucl remove examples - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    - block:
+        - ucl:
+            path: "{{ tests_dir }}/set.in"
+            upath: "rootkey.subkey.child"
+            state: absent
+          register: result
+        - debug:
+            msg: "{{ msg.splitlines() }}"
+          vars:
+            msg: |-
+              {{ result|to_nice_yaml }}
+          when: debug|default(false)|bool
+      tags: ex-rm-1
+
+# Include-rewrite - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    - block:
+        - ucl:
+            path: "{{ tests_dir }}/set.in"
+            upath: "rootkey.subkey.key"
+            value: newvalue
+          register: result
+        - debug:
+            msg: "{{ msg.splitlines() }}"
+          vars:
+            msg: |-
+              {{ result|to_nice_yaml }}
+          when: debug|default(false)|bool
+      tags: include-rewrite-same
+
+# Module ucl file ownership and permissions examples - - - - - - - - - - - 
+
+    - block:
+        - ucl:
+            path: /etc/pkg/FreeBSD.conf
+            owner: root
+            group: wheel
+            mode: '0664'
+            upath: freebsd.url
+          register: result
+        - debug:
+            msg: "{{ msg.splitlines() }}"
+          vars:
+            msg: |-
+              {{ result|to_nice_yaml }}
+          when: debug|default(false)|bool
+      tags: ex-getfs-1
+
+    - block:
+        - ucl:
+            path: /etc/pkg/FreeBSD.conf
+            owner: admin
+            group: wheel
+            mode: '0644'
+            upath: freebsd.url
+          register: result
+        - debug:
+            msg: "{{ msg.splitlines() }}"
+          vars:
+            msg: |-
+              {{ result|to_nice_yaml }}
+          when: debug|default(false)|bool
+      tags: ex-getfs-2
+
+    - block:
+        - ucl:
+            path: /etc/pkg/FreeBSD.conf
+            owner: admin
+            group: wheel
+            mode: '0664'
+            upath: freebsd.url
+            value: "pkg+http://pkg.FreeBSD.org/${ABI}/quarterly"
+            backup: true
+          register: result
+        - debug:
+            msg: "{{ msg.splitlines() }}"
+          vars:
+            msg: |-
+              {{ result|to_nice_yaml }}
+          when: debug|default(false)|bool
+      tags: ex-setfs-1
+
+    - block:
+        - ucl:
+            path: /etc/pkg/FreeBSD.conf
+            owner: root
+            group: wheel
+            mode: '0644'
+            upath: freebsd.url
+            value: "pkg+http://pkg.FreeBSD.org/${ABI}/latest"
+            backup: true
+          register: result
+        - debug:
+            msg: "{{ msg.splitlines() }}"
+          vars:
+            msg: |-
+              {{ result|to_nice_yaml }}
+          when: debug|default(false)|bool
+      tags: ex-setfs-2
+
+    - block:
+        - ucl:
+            path: /etc/pkg/FreeBSD.conf
+            owner: root
+            group: wheel
+            mode: '0664'
+            upath: freebsd.url
+            state: absent
+            backup: true
+          register: result
+        - debug:
+            msg: "{{ msg.splitlines() }}"
+          vars:
+            msg: |-
+              {{ result|to_nice_yaml }}
+          when: debug|default(false)|bool
+      tags: ex-rmfs-1
+
+    - block:
+        - ucl:
+            path: /etc/pkg/FreeBSD.conf
+            owner: root
+            group: wheel
+            mode: '0644'
+            upath: freebsd.url
+            state: absent
+          register: result
+        - debug:
+            msg: "{{ msg.splitlines() }}"
+          vars:
+            msg: |-
+              {{ result|to_nice_yaml }}
+          when: debug|default(false)|bool
+      tags: ex-rmfs-2
+
+
+# Module ucl file validate examples - - - - - - - - - - - - - - - - - - - - - -
+
+    - block:
+        - ucl:
+            path: /etc/ssh/sshd_config
+            owner: root
+            group: wheel
+            mode: '0644'
+            upath: X11Forwarding
+            value: 'yes'
+            lang: yaml
+            validate: 'sshd -t -f %s'
+          register: result
+        - debug:
+            msg: "{{ msg.splitlines() }}"
+          vars:
+            msg: |-
+              {{ result|to_nice_yaml }}
+          when: debug|default(false)|bool
+      tags: ex-val-1
+
+      # shell> ansible-playbook run_tests.yml -t ex-val-2 -e debug=true
+      # message: Content changed. Validated. Temporary file moved to path.
+    - block:
+        - ucl:
+            path: /etc/pkg/FreeBSD.conf
+            owner: root
+            group: wheel
+            mode: '0644'
+            upath: freebsd.enabled
+            value: 'false'
+            validate: 'pkg -C %s stat'
+          register: result
+        - debug:
+            msg: "{{ msg.splitlines() }}"
+          vars:
+            msg: |-
+              {{ result|to_nice_yaml }}
+          when: debug|default(false)|bool
+      tags: ex-val-2
+
+    - block:
+        - ucl:
+            path: /etc/pkg/FreeBSD.conf
+            owner: root
+            group: wheel
+            mode: '0644'
+            upath: freebsd.enabled
+            value: 'true'
+            validate: 'pkg -C %s stat'
+          register: result
+        - debug:
+            msg: "{{ msg.splitlines() }}"
+          vars:
+            msg: |-
+              {{ result|to_nice_yaml }}
+          when: debug|default(false)|bool
+      tags: ex-val-3
+
+# EOF

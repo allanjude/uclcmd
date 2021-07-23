@@ -3,7 +3,7 @@
   when: debug|default(false)|bool
 
 - find:
-    path: "{{ tests_dir }}"
+    path: "{{ tests_dir_local }}"
     patterns: "{{ (test_in|basename|splitext).0 }}_*.ansible"
   register: tests_ansible
   delegate_to: localhost
@@ -18,7 +18,7 @@
                                        'res': _res}}) }}"
   loop: "{{ tests_ansible.files|map(attribute='path')|list }}"
   vars:
-    _mod: "{{ lookup('file', item)|from_yaml }}"
+    _mod: "{{ lookup('template', item)|from_yaml }}"
     _res: "{{ tests_dir }}/{{ (item|basename|splitext).0 }}.res"
 - debug:
     var: _tests
@@ -26,14 +26,14 @@
 
 - ucl:
     path: "{{ test_in }}"
-    uclstring: "{{ item.value.mod.ucl.uclstring|default(omit) }}"
     upath: "{{ item.value.mod.ucl.upath|default(omit) }}"
     ipath: "{{ item.value.mod.ucl.ipath|default(omit) }}"
     value: "{{ item.value.mod.ucl.value|default(omit) }}"
+    type: "{{ item.value.mod.ucl.type|default(omit) }}"
     merge: "{{ item.value.mod.ucl.merge|default(omit) }}"
     state: "{{ item.value.mod.ucl.state|default(omit) }}"
     delimiter: "{{ item.value.mod.ucl.delimiter|default(omit) }}"
-    format: "{{ item.value.mod.ucl.format|default(omit) }}"
+    lang: "{{ item.value.mod.ucl.lang|default(omit) }}"
   register: tests_res
   loop: "{{ _tests|dict2items }}"
   loop_control:
@@ -59,20 +59,40 @@
 - shell:
     cmd: bash -c 'diff -B <(echo "{{ item.stdout }}") <(echo "{{ res }}")'
 #   cmd: bash -c 'diff -EZbwB <(echo "{{ item.stdout }}") <(echo "{{ res }}")'
-  register: tests_dif
+  register: tests_diff
   loop: "{{ tests_res.results }}"
   loop_control:
     label: "{{ item.item.key }}"
   vars:
     res: "{{ lookup('file', item.item.value.res)|string }}"
   delegate_to: localhost
+  check_mode: false
+  ignore_errors: true
+  no_log: true
  
 - debug:
-    var: tests_dif
+    var: tests_diff
   when: debug|default(false)|bool
+
 - debug:
-    msg: "{{ (_rc|int == 0)|ternary('[OK]  *** ' ~ _set ~ ' *** Passed.',
-                                    '[ERR] *** ' ~ _set ~ ' *** Failed.') }}"
+    msg: "{{ msg.split('\n') }}"
+  loop: "{{ tests_diff.results }}"
+  loop_control:
+    label: "{{ item.item.item.key }}"
   vars:
-    _rc: "{{ tests_dif.results|map(attribute='rc')|map('int')|sum }}"
+    msg: |-
+      = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+      [ERR]: {{ item.item.item.key }}
+      {{ item.invocation.module_args._raw_params }}
+      - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+      {{ item.stdout }}
+      = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+  when: item.rc != 0
+
+- debug:
+    msg: "{{ (_rc|int == 0)|
+             ternary('[OK]  *** Test group: ' ~ _set ~ ' *** Passed.',
+                     '[ERR] *** Test group: ' ~ _set ~ ' *** ' ~ _rc ~ ' item(s) failed.') }}"
+  vars:
+    _rc: "{{ tests_diff.results|map(attribute='rc')|map('int')|sum }}"
     _set: "{{ (test_in|basename|splitext).0 }}"

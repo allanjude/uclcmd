@@ -1,9 +1,145 @@
-Ansible module ucl test setup
-=============================
+Testing of Ansible module ucl
+#############################
+
+
+The preliminary results of testing Ansbile module ucl (WIP) are in the
+first section. Last two sections comprise the setup instructions of
+the client and controller respectively.
+
+
+Results
+=======
+
+Test module ucl
+---------------
+
+Run separate groups of the tests (get, set, merge, ...) with options
+"--check --diff" (equivalent of -CD). The option -C prevents changes
+of the tested data. If you run the tests without the option -C the
+tested data will be changed and the following tests will crash. Go to
+the repo at the remote host and checkout the origin if this
+accidentally happens. The test group *get* can be run without -C
+option. The option -D is optional. If used you'll see unified diffs of
+the before/after data on the fly.
+
+  shell> pwd
+  /scratch/vbotka.uclcmd/contrib/ansible
+
+  shell> ansible-playbook run_tests.yml -t tests-module -e patterns=get.in
+  ...
+  msg: '[OK]  *** Test group: get *** Passed.'
+
+  shell> ansible-playbook run_tests.yml -t tests-module -e patterns=set.in -CD
+  ...
+  msg: '[ERR] *** Test group: set *** 1 item(s) failed.'
+
+  shell> ansible-playbook run_tests.yml -t tests-module -e patterns=merge.in -CD
+  ...
+  msg: '[OK]  *** Test group: merge *** Passed.'
+
+  (WIP)
+
+
+Errors
+------
+
+* tests/get_07.ansible
+  Options not implemented yet.
+  get --shellvars --keys --expand .|recurse
+
+* tests/set_10.ansible
+  [WARNING]: The value "[1, 2, 3]" (type list) was converted to "'[1,
+  2, 3]'" (type string). If this does not look like what you expect,
+  quote the entire value to ensure it does not change.
+
+
+Test uclcmd command
+-------------------
+
+The playbook run_tests_command.yml runs commands tests/*.cmd and
+stores the stdout results of the commands to the files
+/tmp/*.tmp. These files, instead of the data.out, are compared to the
+expected results tests/*.res.
+
+shell> ansible-playbook run_tests.yml -t tests-command -e patterns="*.in"
+  msg: '[OK]  *** Test group: get *** Passed.'
+  msg: '[OK]  *** Test group: include-append-high *** Passed.'
+  msg: '[OK]  *** Test group: include-append-low *** Passed.'
+  msg: '[OK]  *** Test group: merge *** Passed.'
+  msg: '[OK]  *** Test group: include-append-same *** Passed.'
+  msg: '[ERR] *** Test group: include-error *** 1 item(s) failed.'
+  msg: '[ERR] *** Test group: include-merge-high *** 1 item(s) failed.'
+  msg: '[ERR] *** Test group: include-merge-low *** 1 item(s) failed.'
+  msg: '[OK]  *** Test group: include-merge-same *** Passed.'
+  msg: '[OK]  *** Test group: include-rewrite-high *** Passed.'
+  msg: '[OK]  *** Test group: include-rewrite-low *** Passed.'
+  msg: '[OK]  *** Test group: include-rewrite-same *** Passed.'
+  msg: '[ERR] *** Test group: set *** 1 item(s) failed.'
+
+The same tests failed by running the script directly at the client
+
+  $ ./run_tests.sh
+  Test[include-error_01] Failed. did not match
+  Test[include-merge-high_01] Failed. did not match.
+  Test[include-merge-low_01] Failed. did not match.
+  Test[set_08] Failed. did not match.
+
+
+Other examples
+==============
+
+See available tags. There are other examples tagged ex-*.
+
+  shell> ansible-playbook run_tests.yml --list-tags
+  playbook: run_tests.yml
+  play #1 (test_ucl): test_ucl	TAGS: []
+        TASK TAGS: [always, ex-get-1, ex-get-2, ex-get-3,
+        ex-get-4-err, ex-rm-1, ex-set-1, ex-set-2,
+        include-rewrite-same, test-merge-1, test-merge-2,
+        test-merge-3, test-merge-4, test-merge-5, test-merge-6,
+        test-merge-7, test-merge-8, test-merge-9, test-set-1,
+        test-set-10, test-set-2, test-set-3, test-set-4, test-set-5,
+        test-set-6, test-set-7, test-set-8, test-set-9, tests-command,
+        tests-module, tests-module-get-format]
+
+See the code before running the examples.
+
+
+Troubleshooting
+===============
+
+* Turn on debugging output, e.g.
+  shell> ansible-playbook run_tests.yml -t tests-module -e patterns=get.in -e debug=true
+
+* Make sure the data tests/*.in hasn't been changed. (git status)
+
+
+Setup required at the client (remote host)
+==========================================
+
+* uclcmd
+
+* Ansible standard ssh connectivity
+  shell> ssh asadmin@10.1.0.17 which uclcmd
+  /usr/local/bin/uclcmd
+
+* Clean master branch of the uclcmd repo
+  shell> ssh asadmin@10.1.0.17 "cd /scratch/uclcmd; git remote -v; git status"
+  origin			https://github.com/allanjude/uclcmd (fetch)
+  origin			https://github.com/allanjude/uclcmd (push)
+  On branch master
+  Your branch is up to date with 'origin/master'.
+
+  nothing to commit, working tree clean
+
+
+Test setup required at the controller (localhost)
+=================================================
 
 Install Ansible
 ---------------
 <TBD>
+
 
 Clone vbotka.uclcmd
 -------------------
@@ -119,34 +255,8 @@ shell> ansible host1 -m setup | grep ansible_kernel_version
         "ansible_kernel_version": "FreeBSD 13.0-RELEASE #0 ...
 
 
-Install uclcmd at the remote host(s)
-------------------------------------
-shell> ssh asadmin@10.1.0.17 which uclcmd
-/usr/local/bin/uclcmd
-
-
-Clone vbotka.uclcmd at the remote host(s) and checkout branch ansible
----------------------------------------------------------------------
-shell> ssh asadmin@10.1.0.17 cd /scratch/vbotka.uclcmd; git status
-On branch ansible
-Your branch is up to date with 'origin/ansible'.
-
-nothing to commit, working tree clean
-
-
-Disable module from_csv.py. Seems to be broken. We don't need it.
-----------------------------------------------------------------
-If Ansible shows WARNING]: Skipping plugin ... filter/from_csv.py) as
-it seems to be invalid: No module named 'ansible_collections.community'
-
-shell> pwd
-/scratch/vbotka.ansible.community.general/plugins/filter
-
-shell> mv from_csv.py from_csv.py.broken
-
-
-Link tests directory to current
--------------------------------
+Link tests directory to contrib/ansible
+---------------------------------------
 shell> pwd
 /scratch/vbotka.uclcmd/contrib/ansible
 
@@ -158,18 +268,10 @@ Update variables of the playbook to your setting
 shell> pwd
 /scratch/vbotka.uclcmd/contrib/ansible
 
-shell> grep _dir run_tests.yml 
+shell> grep _dir run_tests.yml
     tests_dir_local: "{{ playbook_dir }}/tests"  # at controller (localhost)
-    tests_dir: /scratch/vbotka.uclcmd/tests      # at remote host(s)
-    run_dir: /scratch/vbotka.uclcmd              # at remote host(s)
-
-
-Select patterns you want to test
---------------------------------
-shell> grep patterns run_tests.yml 
-#   patterns: '*.in*'
-    patterns: 'get.in*'
-#   patterns: 'set.in*'
+    tests_dir: /scratch/uclcmd/tests             # at client(s) (remote host(s))
+    run_dir: /scratch/uclcmd                     # at client(s) (remote host(s))
 
 
 Test syntax of the playbook
@@ -180,111 +282,6 @@ shell> pwd
 shell> ansible-playbook run_tests.yml --syntax-check
 
 playbook: run_tests.yml
-
-
-List available tags
--------------------
-shell> ansible-playbook run_tests.yml --list-tags
-
-playbook: run_tests.yml
-
-  play #1 (test_ucl): test_ucl	TAGS: []
-      TASK TAGS: [test-remove-1, tests-command, tests-module, tests-module-get-format]
-
-
-Test ucl module
----------------
-shell> ansible-playbook run_tests.yml -t tests-module
-
-See output
-https://gist.github.com/vbotka/73c0647538f565f4bfb67b244c934e78
-
-
-Enable debug to see details
----------------------------
-shell> ansible-playbook run_tests.yml -t tests-module -e debug=true
-
-shell> pwd
-/scratch/vbotka.uclcmd/contrib/ansible
-
-shell> ansible-playbook run_tests.yml -e debug=true -t test-remove-1 -C
-
-PLAY [test_ucl] **************************************************************************************************
-
-TASK [ucl] *******************************************************************************************************
-ok: [host1]
-
-TASK [debug] *****************************************************************************************************
-ok: [host1] =>
-  msg:
-  - 'changed: false'
-  - 'cmd: /usr/local/bin/uclcmd remove -n -u -f /scratch/vbotka.uclcmd/tests/set.in rootkey.subkey.child'
-  - 'diff:'
-  - '    after:'
-  - '    - rootkey {'
-  - '    - ''    subkey {'''
-  - '    - ''        key = "value";'''
-  - '    - ''    }'''
-  - '    - ''    array ['''
-  - '    - ''        "a",'''
-  - '    - ''        "b",'''
-  - '    - ''        "c",'''
-  - '    - ''    ]'''
-  - '    - ''}'''
-  - '    before:'
-  - '    - rootkey {'
-  - '    - ''    subkey {'''
-  - '    - ''        key = "value";'''
-  - '    - ''        child = "value";'''
-  - '    - ''    }'''
-  - '    - ''    array ['''
-  - '    - ''        "a",'''
-  - '    - ''        "b",'''
-  - '    - ''        "c",'''
-  - '    - ''    ]'''
-  - '    - ''}'''
-  - '    diff:'
-  - '    - ''  rootkey {'''
-  - '    - ''      subkey {'''
-  - '    - ''          key = "value";'''
-  - '    - ''-         child = "value";'''
-  - '    - ''      }'''
-  - '    - ''      array ['''
-  - '    - ''          "a",'''
-  - '    - ''          "b",'''
-  - '    - ''          "c",'''
-  - '    - ''      ]'''
-  - '    - ''  }'''
-  - 'failed: false'
-  - 'message: '''''
-  - 'rc: 0'
-  - 'stderr: '''''
-  - 'stderr_lines: []'
-  - 'stdout: |-'
-  - '    rootkey {'
-  - '        subkey {'
-  - '            key = "value";'
-  - '        }'
-  - '        array ['
-  - '            "a",'
-  - '            "b",'
-  - '            "c",'
-  - '        ]'
-  - '    }'
-  - 'stdout_lines:'
-  - '- rootkey {'
-  - '- ''    subkey {'''
-  - '- ''        key = "value";'''
-  - '- ''    }'''
-  - '- ''    array ['''
-  - '- ''        "a",'''
-  - '- ''        "b",'''
-  - '- ''        "c",'''
-  - '- ''    ]'''
-  - '- ''}'''
-
-PLAY RECAP *******************************************************************************************************
-host1                      : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
 
 
 # EOF

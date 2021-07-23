@@ -4,7 +4,7 @@
     - ucl:
         path: "{{ tests_dir }}/get.in"
         upath: "."
-        format: yaml
+        lang: yaml
       register: result
     - debug:
         msg: "{{ result.stdout }}"
@@ -14,7 +14,7 @@
     - ucl:
         path: "{{ tests_dir }}/get.in"
         upath: "."
-        format: json
+        lang: json
       register: result
     - debug:
         msg: "{{ result.stdout }}"
@@ -24,7 +24,7 @@
     - ucl:
         path: "{{ tests_dir }}/get.in"
         upath: "."
-        format: cjson
+        lang: cjson
       register: result
     - debug:
         msg: "{{ result.stdout }}"
@@ -34,7 +34,7 @@
     - ucl:
         path: "{{ tests_dir }}/get.in"
         upath: "."
-        format: msgpack
+        lang: msgpack
       register: result
     - debug:
         msg: "{{ result.stdout }}"
