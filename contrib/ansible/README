@@ -1,14 +1,34 @@
 Testing of Ansible module ucl
 #############################
 
+Current status
+==============
+
+shell> ansible-playbook run_tests.yml -t tests-module -e patterns='*.in' -CD | grep msg:
+
+  msg: '[OK]  *** Test group: get *** Passed.'
+  msg: '[OK]  *** Test group: include-append-high *** Passed.'
+  msg: '[OK]  *** Test group: include-append-low *** Passed.'
+  msg: '[OK]  *** Test group: merge *** Passed.'
+  msg: '[OK]  *** Test group: include-append-same *** Passed.'
+  msg: '[ERR]: /scratch/uclcmd/tests/include-error.in Failed.'
+  msg: '[ERR] *** Test group: include-error *** 1 item(s) failed.'
+  msg: '[ERR] *** Test group: include-merge-high *** 1 item(s) failed.'
+  msg: '[ERR] *** Test group: include-merge-low *** 1 item(s) failed.'
+  msg: '[OK]  *** Test group: include-merge-same *** Passed.'
+  msg: '[OK]  *** Test group: include-rewrite-high *** Passed.'
+  msg: '[OK]  *** Test group: include-rewrite-low *** Passed.'
+  msg: '[OK]  *** Test group: include-rewrite-same *** Passed.'
+  msg: '[ERR] *** Test group: set *** 1 item(s) failed.'
+
+
+Results
+=======
 
 The preliminary results of testing Ansible module ucl (WIP) are in the
 first section. Last two sections comprise the setup instructions for
 the client and controller.
 
-
-Results
-=======
 
 Test module ucl
 ---------------
@@ -73,6 +93,7 @@ Errors
   include-merge-high
   include-merge-low
   [ERR] ...
+
 
 Test uclcmd command
 -------------------
