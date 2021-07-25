@@ -1,0 +1,123 @@
+---
+
+- block:
+    - ucl:
+        path: "{{ tests_dir }}/include-append-high.in"
+        chdir: /scratch/uclcmd
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+  tags: test-inc-app-high
+
+- block:
+    - ucl:
+        path: "{{ tests_dir }}/include-append-low.in"
+        chdir: /scratch/uclcmd
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+  tags: test-inc-app-low
+
+- block:
+    - ucl:
+        path: "{{ tests_dir }}/include-append-same.in"
+        chdir: /scratch/uclcmd
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+  tags: test-inc-app-same
+
+- block:
+    - ucl:
+        path: "{{ tests_dir }}/include-error.in"
+        chdir: /scratch/uclcmd
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+  tags: test-inc-err
+
+- block:
+    - ucl:
+        path: "{{ tests_dir }}/include-merge-high.in"
+        chdir: /scratch/uclcmd
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+  tags: test-merge-high
+
+- block:
+    - ucl:
+        path: "{{ tests_dir }}/include-merge-low.in"
+        chdir: /scratch/uclcmd
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+  tags: test-merge-low
+
+- block:
+    - ucl:
+        path: "{{ tests_dir }}/include-merge-same.in"
+        chdir: /scratch/uclcmd
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+  tags: test-merge-same
+
+- block:
+    - ucl:
+        path: "{{ tests_dir }}/include-rewrite-high.in"
+        chdir: /scratch/uclcmd
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+  tags: test-rwrt-high
+
+- block:
+    - ucl:
+        path: "{{ tests_dir }}/include-rewrite-low.in"
+        chdir: /scratch/uclcmd
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+  tags: test-rwrt-low
+
+- block:
+    - ucl:
+        path: "{{ tests_dir }}/include-rewrite-same.in"
+        chdir: /scratch/uclcmd
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+  tags: test-rwrt-same
+
+# EOF

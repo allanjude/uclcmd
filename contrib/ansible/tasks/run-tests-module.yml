@@ -1,3 +1,4 @@
+---
 - debug:
     msg: "Input: {{ test_in }}"
   when: debug|default(false)|bool
@@ -24,20 +25,28 @@
     var: _tests
   when: debug|default(false)|bool
 
-- ucl:
-    path: "{{ test_in }}"
-    upath: "{{ item.value.mod.ucl.upath|default(omit) }}"
-    ipath: "{{ item.value.mod.ucl.ipath|default(omit) }}"
-    value: "{{ item.value.mod.ucl.value|default(omit) }}"
-    type: "{{ item.value.mod.ucl.type|default(omit) }}"
-    merge: "{{ item.value.mod.ucl.merge|default(omit) }}"
-    state: "{{ item.value.mod.ucl.state|default(omit) }}"
-    delimiter: "{{ item.value.mod.ucl.delimiter|default(omit) }}"
-    lang: "{{ item.value.mod.ucl.lang|default(omit) }}"
-  register: tests_res
-  loop: "{{ _tests|dict2items }}"
-  loop_control:
-    label: "{{ item.key }}"
+- block:
+    - ucl:
+        path: "{{ test_in }}"
+        chdir: "{{ item.value.mod.ucl.chdir|default(omit) }}"
+        upath: "{{ item.value.mod.ucl.upath|default(omit) }}"
+        ipath: "{{ item.value.mod.ucl.ipath|default(omit) }}"
+        value: "{{ item.value.mod.ucl.value|default(omit) }}"
+        type: "{{ item.value.mod.ucl.type|default(omit) }}"
+        merge: "{{ item.value.mod.ucl.merge|default(omit) }}"
+        state: "{{ item.value.mod.ucl.state|default(omit) }}"
+        delimiter: "{{ item.value.mod.ucl.delimiter|default(omit) }}"
+        lang: "{{ item.value.mod.ucl.lang|default(omit) }}"
+        create: "{{ item.value.mod.ucl.create|default(omit) }}"
+        backup: "{{ item.value.mod.ucl.backup|default(omit) }}"
+        validate: "{{ item.value.mod.ucl.validate|default(omit) }}"
+      register: tests_res
+      loop: "{{ _tests|dict2items }}"
+      loop_control:
+        label: "{{ item.key }}"
+  rescue:
+    - debug:
+        msg: "[ERR]: {{ test_in }} Failed."
 - debug:
     var: tests_res
   when: debug|default(false)|bool
@@ -57,19 +66,21 @@
   when: debug|default(false)|bool
 
 - shell:
-    cmd: bash -c 'diff -B <(echo "{{ item.stdout }}") <(echo "{{ res }}")'
-#   cmd: bash -c 'diff -EZbwB <(echo "{{ item.stdout }}") <(echo "{{ res }}")'
+    cmd: "bash -c '{{ _cmd }}'"
   register: tests_diff
   loop: "{{ tests_res.results }}"
   loop_control:
     label: "{{ item.item.key }}"
   vars:
     res: "{{ lookup('file', item.item.value.res)|string }}"
+    _cmd_diff: 'diff -B <(echo "{{ item.stdout }}") <(echo "{{ res }}")'
+    _cmd_fail: '/usr/bin/false'
+    _cmd: "{{ (item.rc == 0)|ternary(_cmd_diff, _cmd_fail) }}"
   delegate_to: localhost
   check_mode: false
   ignore_errors: true
   no_log: true
- 
+
 - debug:
     var: tests_diff
   when: debug|default(false)|bool
@@ -84,7 +95,7 @@
       = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
       [ERR]: {{ item.item.item.key }}
       {{ item.invocation.module_args._raw_params }}
-      - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+      - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       {{ item.stdout }}
       = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
   when: item.rc != 0

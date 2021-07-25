@@ -1,0 +1,21 @@
+---
+
+- ucl:
+    path: "{{ tests_dir }}/get.in"
+    upath: "."
+    lang: "{{ item }}"
+  register: result
+  loop:
+    - ucl
+    - yaml
+    - json
+    - cjson
+    - msgpack
+
+- debug:
+    msg: "{{ item.stdout }}"
+  loop: "{{ result.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+
+# EOF

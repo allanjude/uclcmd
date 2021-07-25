@@ -1,0 +1,104 @@
+---
+- block:
+    - ucl:
+        path: /etc/pkg/FreeBSD.conf
+        owner: root
+        group: wheel
+        mode: '0664'
+        upath: freebsd.url
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+      when: debug|default(false)|bool
+  tags: ex-get-fs-1
+
+- block:
+    - ucl:
+        path: /etc/pkg/FreeBSD.conf
+        owner: admin
+        group: wheel
+        mode: '0644'
+        upath: freebsd.url
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+      when: debug|default(false)|bool
+  tags: ex-get-fs-2
+
+- block:
+    - ucl:
+        path: /etc/pkg/FreeBSD.conf
+        owner: admin
+        group: wheel
+        mode: '0664'
+        upath: freebsd.url
+        value: "pkg+http://pkg.FreeBSD.org/${ABI}/quarterly"
+        backup: true
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+      when: debug|default(false)|bool
+  tags: ex-set-fs-bck-1
+
+- block:
+    - ucl:
+        path: /etc/pkg/FreeBSD.conf
+        owner: root
+        group: wheel
+        mode: '0644'
+        upath: freebsd.url
+        value: "pkg+http://pkg.FreeBSD.org/${ABI}/latest"
+        backup: true
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+      when: debug|default(false)|bool
+  tags: ex-set-fs-bck-2
+
+- block:
+    - ucl:
+        path: /etc/pkg/FreeBSD.conf
+        owner: root
+        group: wheel
+        mode: '0664'
+        upath: freebsd.url
+        state: absent
+        backup: true
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+      when: debug|default(false)|bool
+  tags: ex-rm-fs-bck-1
+
+- block:
+    - ucl:
+        path: /etc/pkg/FreeBSD.conf
+        owner: root
+        group: wheel
+        mode: '0644'
+        upath: freebsd.url
+        state: absent
+        backup: true
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+      when: debug|default(false)|bool
+  tags: ex-rm-fs-bck-2

@@ -1,0 +1,42 @@
+---
+
+- block:
+    - ucl:
+        path: /etc/pkg/FreeBSD.conf
+        upath: .
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+      when: debug|default(false)|bool
+  tags: ex-get-1
+
+- block:
+    - ucl:
+        path: /etc/pkg/FreeBSD.conf
+        upath: freebsd.url
+      register: result
+    - set_fact:
+        freebsd_url: "{{ result.stdout }}"
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+      when: debug|default(false)|bool
+  tags: ex-get-2
+
+- block:
+    - ucl:
+        path: /etc/pkg/FreeBSD.conf
+        lang: yaml
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+      when: debug|default(false)|bool
+  tags: ex-get-3

@@ -2,9 +2,9 @@ Testing of Ansible module ucl
 #############################
 
 
-The preliminary results of testing Ansbile module ucl (WIP) are in the
-first section. Last two sections comprise the setup instructions of
-the client and controller respectively.
+The preliminary results of testing Ansible module ucl (WIP) are in the
+first section. Last two sections comprise the setup instructions for
+the client and controller.
 
 
 Results
@@ -17,15 +17,17 @@ Run separate groups of the tests (get, set, merge, ...) with options
 "--check --diff" (equivalent of -CD). The option -C prevents changes
 of the tested data. If you run the tests without the option -C the
 tested data will be changed and the following tests will crash. Go to
-the repo at the remote host and checkout the origin if this
-accidentally happens. The test group *get* can be run without -C
-option. The option -D is optional. If used you'll see unified diffs of
+the repo at the remote host and checkout the origin. You'll be
+reminded by the playbook to use the check mode. Optionally disable it
+by "-e no_check=True"
+
+The option -D is optional. If used you'll see unified diffs of
 the before/after data on the fly.
 
   shell> pwd
   /scratch/vbotka.uclcmd/contrib/ansible
 
-  shell> ansible-playbook run_tests.yml -t tests-module -e patterns=get.in
+  shell> ansible-playbook run_tests.yml -t tests-module -e patterns=get.in -CD
   ...
   msg: '[OK]  *** Test group: get *** Passed.'
 
@@ -37,7 +39,19 @@ the before/after data on the fly.
   ...
   msg: '[OK]  *** Test group: merge *** Passed.'
 
-  (WIP)
+  shell>ansible-playbook run_tests.yml -t tests-module -e patterns=include-*.in -CD
+
+  msg: '[OK]  *** Test group: include-append-high *** Passed.'
+  msg: '[OK]  *** Test group: include-append-low *** Passed.'
+  msg: '[OK]  *** Test group: include-append-same *** Passed.'
+  msg: '[ERR]: /scratch/uclcmd/tests/include-error.in Failed.'
+  msg: '[ERR] *** Test group: include-error *** 1 item(s) failed.'
+  msg: '[ERR] *** Test group: include-merge-high *** 1 item(s) failed.'
+  msg: '[ERR] *** Test group: include-merge-low *** 1 item(s) failed.'
+  msg: '[OK]  *** Test group: include-merge-same *** Passed.'
+  msg: '[OK]  *** Test group: include-rewrite-high *** Passed.'
+  msg: '[OK]  *** Test group: include-rewrite-low *** Passed.'
+  msg: '[OK]  *** Test group: include-rewrite-same *** Passed.'
 
 
 Errors
@@ -52,6 +66,13 @@ Errors
   2, 3]'" (type string). If this does not look like what you expect,
   quote the entire value to ensure it does not change.
 
+* tests/include-merge-high_01.ansible
+  tests/include-merge-low_01.ansible
+  include-error
+  include-merge-high
+  include-merge-high
+  include-merge-low
+  [ERR] ...
 
 Test uclcmd command
 -------------------
@@ -93,14 +114,18 @@ See available tags. There are other examples tagged ex-*.
   shell> ansible-playbook run_tests.yml --list-tags
   playbook: run_tests.yml
   play #1 (test_ucl): test_ucl	TAGS: []
-        TASK TAGS: [always, ex-get-1, ex-get-2, ex-get-3,
-        ex-get-4-err, ex-rm-1, ex-set-1, ex-set-2,
-        include-rewrite-same, test-merge-1, test-merge-2,
-        test-merge-3, test-merge-4, test-merge-5, test-merge-6,
-        test-merge-7, test-merge-8, test-merge-9, test-set-1,
-        test-set-10, test-set-2, test-set-3, test-set-4, test-set-5,
-        test-set-6, test-set-7, test-set-8, test-set-9, tests-command,
-        tests-module, tests-module-get-format]
+      TASK TAGS: [always, ex-get, ex-get-all-formats, ex-get-err,
+      ex-get-fs-1, ex-get-fs-2, ex-rm-1, ex-rm-fs-bck-1,
+      ex-rm-fs-bck-2, ex-set, ex-set-fs-bck-1, ex-set-fs-bck-2,
+      ex-set-in, ex-val-1, ex-val-2, ex-val-3, test-inc-app-high,
+      test-inc-app-low, test-inc-app-same, test-inc-err, test-merge-1,
+      test-merge-2, test-merge-3, test-merge-4, test-merge-5,
+      test-merge-6, test-merge-7, test-merge-8, test-merge-9,
+      test-merge-high, test-merge-low, test-merge-same,
+      test-rwrt-high, test-rwrt-low, test-rwrt-same, test-set-1,
+      test-set-10, test-set-2, test-set-3, test-set-4, test-set-5,
+      test-set-6, test-set-7, test-set-8, test-set-9, tests-command,
+      tests-module]
 
 See the code before running the examples.
 
