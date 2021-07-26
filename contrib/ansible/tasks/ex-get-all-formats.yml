@@ -1,6 +1,6 @@
 ---
 
-- ucl:
+- community.general.ucl:
     path: "{{ tests_dir }}/get.in"
     upath: "."
     lang: "{{ item }}"

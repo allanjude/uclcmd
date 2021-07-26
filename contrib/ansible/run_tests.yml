@@ -116,7 +116,7 @@
     # Module ucl Example remove - - - - - - - - - - - - - - - - - - - - - - - -
 
     - block:
-        - ucl:
+        - community.general.ucl:
             path: "{{ tests_dir }}/set.in"
             upath: "rootkey.subkey.child"
             state: absent
@@ -132,7 +132,7 @@
     # Module ucl Example set input - - - - - - - - - - - - - - - - - - - - - -
 
     - block:
-        - ucl:
+        - community.general.ucl:
             path: "{{ tests_dir }}/set.in"
             upath: "rootkey.subkey.key"
             value: newvalue
@@ -153,7 +153,7 @@
     # Module ucl Example validate - - - - - - - - - - - - - - - - - - - - - - -
 
     - block:
-        - ucl:
+        - community.general.ucl:
             path: /etc/ssh/sshd_config
             owner: root
             group: wheel
@@ -175,7 +175,7 @@
     # message: Content changed. Validated. Temporary file moved to path.
 
     - block:
-        - ucl:
+        - community.general.ucl:
             path: /etc/pkg/FreeBSD.conf
             owner: root
             group: wheel
@@ -193,7 +193,7 @@
       tags: ex-val-2
 
     - block:
-        - ucl:
+        - community.general.ucl:
             path: /etc/pkg/FreeBSD.conf
             owner: root
             group: wheel

@@ -1,7 +1,7 @@
 ---
 
 - block:
-    - ucl:
+    - community.general.ucl:
         path: "{{ tests_dir }}/include-append-high.in"
         chdir: /scratch/uclcmd
       register: result
@@ -13,7 +13,7 @@
   tags: test-inc-app-high
 
 - block:
-    - ucl:
+    - community.general.ucl:
         path: "{{ tests_dir }}/include-append-low.in"
         chdir: /scratch/uclcmd
       register: result
@@ -25,7 +25,7 @@
   tags: test-inc-app-low
 
 - block:
-    - ucl:
+    - community.general.ucl:
         path: "{{ tests_dir }}/include-append-same.in"
         chdir: /scratch/uclcmd
       register: result
@@ -37,7 +37,7 @@
   tags: test-inc-app-same
 
 - block:
-    - ucl:
+    - community.general.ucl:
         path: "{{ tests_dir }}/include-error.in"
         chdir: /scratch/uclcmd
       register: result
@@ -49,7 +49,7 @@
   tags: test-inc-err
 
 - block:
-    - ucl:
+    - community.general.ucl:
         path: "{{ tests_dir }}/include-merge-high.in"
         chdir: /scratch/uclcmd
       register: result
@@ -61,7 +61,7 @@
   tags: test-merge-high
 
 - block:
-    - ucl:
+    - community.general.ucl:
         path: "{{ tests_dir }}/include-merge-low.in"
         chdir: /scratch/uclcmd
       register: result
@@ -73,7 +73,7 @@
   tags: test-merge-low
 
 - block:
-    - ucl:
+    - community.general.ucl:
         path: "{{ tests_dir }}/include-merge-same.in"
         chdir: /scratch/uclcmd
       register: result
@@ -85,7 +85,7 @@
   tags: test-merge-same
 
 - block:
-    - ucl:
+    - community.general.ucl:
         path: "{{ tests_dir }}/include-rewrite-high.in"
         chdir: /scratch/uclcmd
       register: result
@@ -97,7 +97,7 @@
   tags: test-rwrt-high
 
 - block:
-    - ucl:
+    - community.general.ucl:
         path: "{{ tests_dir }}/include-rewrite-low.in"
         chdir: /scratch/uclcmd
       register: result
@@ -109,7 +109,7 @@
   tags: test-rwrt-low
 
 - block:
-    - ucl:
+    - community.general.ucl:
         path: "{{ tests_dir }}/include-rewrite-same.in"
         chdir: /scratch/uclcmd
       register: result

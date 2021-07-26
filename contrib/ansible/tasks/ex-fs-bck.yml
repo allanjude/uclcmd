@@ -1,6 +1,6 @@
 ---
 - block:
-    - ucl:
+    - community.general.ucl:
         path: /etc/pkg/FreeBSD.conf
         owner: root
         group: wheel
@@ -16,7 +16,7 @@
   tags: ex-get-fs-1
 
 - block:
-    - ucl:
+    - community.general.ucl:
         path: /etc/pkg/FreeBSD.conf
         owner: admin
         group: wheel
@@ -32,7 +32,7 @@
   tags: ex-get-fs-2
 
 - block:
-    - ucl:
+    - community.general.ucl:
         path: /etc/pkg/FreeBSD.conf
         owner: admin
         group: wheel
@@ -50,7 +50,7 @@
   tags: ex-set-fs-bck-1
 
 - block:
-    - ucl:
+    - community.general.ucl:
         path: /etc/pkg/FreeBSD.conf
         owner: root
         group: wheel
@@ -68,7 +68,7 @@
   tags: ex-set-fs-bck-2
 
 - block:
-    - ucl:
+    - community.general.ucl:
         path: /etc/pkg/FreeBSD.conf
         owner: root
         group: wheel
@@ -86,7 +86,7 @@
   tags: ex-rm-fs-bck-1
 
 - block:
-    - ucl:
+    - community.general.ucl:
         path: /etc/pkg/FreeBSD.conf
         owner: root
         group: wheel

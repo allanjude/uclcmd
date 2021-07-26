@@ -26,7 +26,7 @@
   when: debug|default(false)|bool
 
 - block:
-    - ucl:
+    - community.general.ucl:
         path: "{{ test_in }}"
         chdir: "{{ item.value.mod.ucl.chdir|default(omit) }}"
         upath: "{{ item.value.mod.ucl.upath|default(omit) }}"

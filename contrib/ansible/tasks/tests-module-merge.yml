@@ -1,7 +1,7 @@
 ---
 
 - block:
-    - ucl:
+    - community.general.ucl:
         merge: true
         path: "{{ tests_dir }}/merge.in"
         ipath: "{{ tests_dir }}/merge_01.ucl"
@@ -15,7 +15,7 @@
   tags: test-merge-1
 
 - block:
-    - ucl:
+    - community.general.ucl:
         merge: true
         path: "{{ tests_dir }}/merge.in"
         ipath: "{{ tests_dir }}/merge_02.ucl"
@@ -29,7 +29,7 @@
   tags: test-merge-2
 
 - block:
-    - ucl:
+    - community.general.ucl:
         merge: true
         path: "{{ tests_dir }}/merge.in"
         ipath: "{{ tests_dir }}/merge_03.ucl"
@@ -43,7 +43,7 @@
   tags: test-merge-3
 
 - block:
-    - ucl:
+    - community.general.ucl:
         merge: true
         path: "{{ tests_dir }}/merge.in"
         upath: "rootkey.array"
@@ -57,7 +57,7 @@
   tags: test-merge-4
 
 - block:
-    - ucl:
+    - community.general.ucl:
         merge: true
         path: "{{ tests_dir }}/merge.in"
         ipath: "{{ tests_dir }}/merge_05.ucl"
@@ -71,7 +71,7 @@
   tags: test-merge-5
 
 - block:
-    - ucl:
+    - community.general.ucl:
         merge: true
         path: "{{ tests_dir }}/merge.in"
         ipath: "{{ tests_dir }}/merge_06.ucl"
@@ -85,7 +85,7 @@
   tags: test-merge-6
 
 - block:
-    - ucl:
+    - community.general.ucl:
         merge: true
         path: "{{ tests_dir }}/merge.in"
         upath: "rootkey.subkey.key"
@@ -99,7 +99,7 @@
   tags: test-merge-7
 
 - block:
-    - ucl:
+    - community.general.ucl:
         merge: true
         path: "{{ tests_dir }}/merge.in"
         upath: "rootkey.array.1"
@@ -113,7 +113,7 @@
   tags: test-merge-8
 
 - block:
-    - ucl:
+    - community.general.ucl:
         merge: true
         path: "{{ tests_dir }}/merge.in"
         ipath: "{{ tests_dir }}/merge_09.ucl"

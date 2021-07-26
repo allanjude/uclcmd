@@ -1,6 +1,6 @@
 ---
 - block:
-    - ucl:
+    - community.general.ucl:
         path: /etc/pkg/FreeBSD.conf
         upath: freebsd.foo
       register: result
@@ -13,7 +13,7 @@
   tags: ex-get-1-err
 
 - block:
-    - ucl:
+    - community.general.ucl:
         path: /etc/pkg/FreeBSD.conf
         upath: freebsd.foo.bar
         value: bar

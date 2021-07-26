@@ -1,7 +1,7 @@
 ---
 
 - block:
-    - ucl:
+    - community.general.ucl:
         path: /etc/pkg/FreeBSD.conf
         upath: freebsd.url
       register: result
@@ -10,7 +10,7 @@
   tags: ex-set-3
 
 - block:
-    - ucl:
+    - community.general.ucl:
         path: /etc/pkg/FreeBSD.conf
         upath: freebsd.url
         value: "pkg+http://pkg.FreeBSD.org/${ABI}/latest"
@@ -24,7 +24,7 @@
   tags: ex-set-1
 
 - block:
-    - ucl:
+    - community.general.ucl:
         path: /etc/pkg/FreeBSD.conf
         upath: freebsd.url
         value: "pkg+http://pkg.FreeBSD.org/${ABI}/quarterly"
@@ -38,7 +38,7 @@
   tags: ex-set-2
 
 - block:
-    - ucl:
+    - community.general.ucl:
         path: /etc/pkg/FreeBSD.conf
         upath: freebsd.url
         value: "{{ freebsd_url }}"

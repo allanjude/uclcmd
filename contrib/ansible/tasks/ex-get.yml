@@ -1,7 +1,7 @@
 ---
 
 - block:
-    - ucl:
+    - community.general.ucl:
         path: /etc/pkg/FreeBSD.conf
         upath: .
       register: result
@@ -14,7 +14,7 @@
   tags: ex-get-1
 
 - block:
-    - ucl:
+    - community.general.ucl:
         path: /etc/pkg/FreeBSD.conf
         upath: freebsd.url
       register: result
@@ -29,7 +29,7 @@
   tags: ex-get-2
 
 - block:
-    - ucl:
+    - community.general.ucl:
         path: /etc/pkg/FreeBSD.conf
         lang: yaml
       register: result
