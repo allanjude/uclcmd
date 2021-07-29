@@ -1,0 +1,57 @@
+---
+- debug:
+    msg: "Input: {{ test_in }}"
+  when: debug|default(false)|bool
+
+- find:
+    path: "{{ tests_dir }}"
+    patterns: "{{ (test_in|basename|splitext).0 }}_*.cmd"
+  register: tests_cmd
+- debug:
+    var: tests_cmd.files|map(attribute='path')|list
+  when: debug|default(false)|bool
+
+- set_fact:
+    _tests: {}
+- set_fact:
+    _tests: "{{ _tests|combine({item: {'cmd': _cmd,
+                                       'dif': _dif,
+                                       'tmp': _tmp,
+                                       'res': _res}}) }}"
+  loop: "{{ tests_cmd.files|map(attribute='path')|list }}"
+  vars:
+    _res: "{{ tests_dir }}/{{ (item|basename|splitext).0 }}.res"
+    _tmp: "/tmp/{{ (item|basename|splitext).0 }}.tmp"
+    _cmd: "{{ 'cat ' ~ test_in ~ ' | uclcmd $(cat ' ~ item ~ ') > ' ~ _tmp }}"
+    _dif: "{{ 'diff -u ' ~ _res ~ ' ' ~ _tmp }}"
+- debug:
+    var: _tests
+  when: debug|default(false)|bool
+
+- shell:
+    cmd: "{{ item.value.cmd }}"
+    chdir: "{{ run_dir }}"
+  register: tests_res
+  loop: "{{ _tests|dict2items }}"
+  loop_control:
+    label: "{{ item.value.cmd }}"
+- debug:
+    var: tests_res
+  when: debug|default(false)|bool
+
+- shell: "{{ item.value.dif }}"
+  register: tests_dif
+  loop: "{{ _tests|dict2items }}"
+  loop_control:
+    label: "{{ item.value.dif }}"
+  ignore_errors: true
+- debug:
+    var: tests_dif
+  when: debug|default(false)|bool
+- debug:
+    msg: "{{ (_rc|int == 0)|
+             ternary('[OK]  *** Test group: ' ~ _set ~ ' *** Passed.',
+                     '[ERR] *** Test group: ' ~ _set ~ ' *** ' ~ _rc ~ ' item(s) failed.') }}"
+  vars:
+    _rc: "{{ tests_dif.results|selectattr('rc', 'ne', 0)|list|length }}"
+    _set: "{{ (test_in|basename|splitext).0 }}"

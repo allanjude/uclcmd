@@ -1,0 +1,132 @@
+---
+
+- block:
+    - community.general.ucl:
+        path: "{{ tests_dir }}/set.in"
+        upath: "rootkey.subkey.key"
+        value: newvalue
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+  tags: test-set-1
+
+- block:
+    - community.general.ucl:
+        path: "{{ tests_dir }}/set.in"
+        upath: "rootkey.array.1"
+        value: d
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+  tags: test-set-2
+
+- block:
+    - community.general.ucl:
+        path: "{{ tests_dir }}/set.in"
+        upath: "rootkey.subkey"
+        ipath: "{{ tests_dir }}/set_03.ucl"
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+  tags: test-set-3
+
+- block:
+    - community.general.ucl:
+        path: "{{ tests_dir }}/set.in"
+        upath: "rootkey.array"
+        ipath: "{{ tests_dir }}/set_04.ucl"
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+  tags: test-set-4
+
+- block:
+    - community.general.ucl:
+        path: "{{ tests_dir }}/set.in"
+        upath: "rootkey.array"
+        value: not-an-array-anymore
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+  tags: test-set-5
+
+- block:
+    - community.general.ucl:
+        path: "{{ tests_dir }}/set.in"
+        upath: "rootkey.new"
+        value: auto-string
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+  tags: test-set-6
+
+- block:
+    - community.general.ucl:
+        path: "{{ tests_dir }}/set.in"
+        upath: "rootkey.new"
+        value: 5
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+  tags: test-set-7
+
+- block:
+    - community.general.ucl:
+        path: "{{ tests_dir }}/set.in"
+        upath: "rootkey.new"
+        value: 5y
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+  tags: test-set-8
+
+- block:
+    - community.general.ucl:
+        path: "{{ tests_dir }}/set.in"
+        upath: "rootkey.new"
+        value: 5g
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+  tags: test-set-9
+
+- block:
+    - community.general.ucl:
+        path: "{{ tests_dir }}/set.in"
+        upath: "rootkey.new"
+        value: "[1,2,3]"
+        type: array
+      register: result
+    - debug:
+        msg: "{{ msg.splitlines() }}"
+      vars:
+        msg: |-
+          {{ result|to_nice_yaml }}
+  tags: test-set-10
