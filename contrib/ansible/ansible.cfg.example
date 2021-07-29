@@ -2,9 +2,9 @@
 inventory = $PWD/hosts
 roles_path = $PWD/roles
 collections_path = /scratch/dev/ansible/collections
-library = /scratch/dev/ansible/collections/ansible_collections/community/general/plugins/modules:/usr/share/ansible/plugins/modules
-module_utils = /scratch/dev/ansible/collections/ansible_collections/community/general/plugins/module_utils:/usr/share/ansible/plugins/module_utils
-filter_plugins = /scratch/dev/ansible/collections/ansible_collections/community/general/plugins/filter:/usr/share/ansible/plugins/filter
+# library = /scratch/dev/ansible/collections/ansible_collections/community/general/plugins/modules:/usr/share/ansible/plugins/modules
+# module_utils = /scratch/dev/ansible/collections/ansible_collections/community/general/plugins/module_utils:/usr/share/ansible/plugins/module_utils
+# filter_plugins = /scratch/dev/ansible/collections/ansible_collections/community/general/plugins/filter:/usr/share/ansible/plugins/filter
 retry_files_enabled = false
 stdout_callback = yaml
 remote_tmp = ~/.ansible/tmp
