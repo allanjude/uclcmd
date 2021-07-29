@@ -17,5 +17,3 @@
   loop: "{{ result.results }}"
   loop_control:
     label: "{{ item.item }}"
-
-# EOF

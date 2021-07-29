@@ -125,5 +125,3 @@
         msg: |-
           {{ result|to_nice_yaml }}
   tags: test-merge-9
-
-# EOF

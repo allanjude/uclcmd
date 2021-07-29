@@ -1,4 +1,5 @@
 ---
+
 - hosts: test_ucl
   gather_facts: false
 
@@ -209,5 +210,3 @@
               {{ result|to_nice_yaml }}
           when: debug|default(false)|bool
       tags: ex-val-3
-
-# EOF

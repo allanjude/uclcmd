@@ -105,5 +105,5 @@
              ternary('[OK]  *** Test group: ' ~ _set ~ ' *** Passed.',
                      '[ERR] *** Test group: ' ~ _set ~ ' *** ' ~ _rc ~ ' item(s) failed.') }}"
   vars:
-    _rc: "{{ tests_diff.results|selectattr('rc', 'ne', 0)|length }}"
+    _rc: "{{ tests_diff.results|selectattr('rc', 'ne', 0)|list|length }}"
     _set: "{{ (test_in|basename|splitext).0 }}"

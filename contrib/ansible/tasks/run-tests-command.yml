@@ -1,3 +1,4 @@
+---
 - debug:
     msg: "Input: {{ test_in }}"
   when: debug|default(false)|bool
@@ -52,5 +53,5 @@
              ternary('[OK]  *** Test group: ' ~ _set ~ ' *** Passed.',
                      '[ERR] *** Test group: ' ~ _set ~ ' *** ' ~ _rc ~ ' item(s) failed.') }}"
   vars:
-    _rc: "{{ tests_dif.results|map(attribute='rc')|map('int')|sum }}"
+    _rc: "{{ tests_dif.results|selectattr('rc', 'ne', 0)|list|length }}"
     _set: "{{ (test_in|basename|splitext).0 }}"
