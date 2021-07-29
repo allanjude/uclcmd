@@ -35,8 +35,15 @@
 #define UCLCMD_H_
 
 #include <errno.h>
+#include <fcntl.h>
 #include <getopt.h>
+#include <inttypes.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include <ucl.h>
 
@@ -47,7 +54,7 @@
 #define UCLCMD_PARSER_FLAGS	UCL_PARSER_KEY_LOWERCASE | \
 		UCL_PARSER_NO_IMPLICIT_ARRAYS | UCL_PARSER_SAVE_COMMENTS
 
-extern int debug, expand, nonewline, show_keys, show_raw;
+extern int debug, expand, noop, nonewline, show_keys, show_raw;
 extern bool firstline, shvars;
 extern int output_type;
 extern ucl_object_t *root_obj;
@@ -56,6 +63,9 @@ extern struct ucl_parser *parser;
 extern struct ucl_parser *setparser;
 extern char input_sepchar;
 extern char output_sepchar;
+extern const char *filename;
+extern const char *outfile;
+extern FILE *output;
 extern char *include_file;
 
 typedef int (*verb_func_t)(int argc, char *argv[]);
@@ -75,6 +85,10 @@ int merge_main(int argc, char *argv[]);
 int merge_mode(char *destination_node, char *data);
 bool merge_recursive(ucl_object_t *top, ucl_object_t *elt, bool copy);
 void output_chunk(const ucl_object_t *obj, char *nodepath, const char *inkey);
+FILE * output_open(const char *output_filename);
+void output_close(FILE *out);
+int replace_file(const ucl_object_t *obj, char *nodepath, const char *inkey,
+    const char *output_filename);
 int output_main(int argc, char *argv[]);
 void output_key(const ucl_object_t *obj, char *nodepath, const char *inkey);
 ucl_object_t* parse_file(struct ucl_parser *parser, const char *filename);
@@ -83,10 +97,12 @@ ucl_object_t* parse_string(struct ucl_parser *parser, char *data);
 int process_get_command(const ucl_object_t *obj, char *nodepath,
     const char *command_str, char *remaining_commands, int recurse);
 int remove_main(int argc, char *argv[]);
-void replace_sep(char *key, char oldsep, char newsep);
+void replace_sep(char *key, int oldsep, int newsep);
 int set_main(int argc, char *argv[]);
-int set_mode(char *destination_node, char *data);
-char * type_as_string (const ucl_object_t *obj);
+int set_mode(char *destination_node, char *data, ucl_type_t obj_type);
+ucl_type_t string_to_type (const char *strtype);
+char * type_as_string (ucl_type_t type);
+char * objtype_as_string (const ucl_object_t *obj);
 void ucl_obj_dump(const ucl_object_t *obj, unsigned int shift);
 void ucl_obj_dump_safe(const ucl_object_t *obj, unsigned int shift);
 void usage();

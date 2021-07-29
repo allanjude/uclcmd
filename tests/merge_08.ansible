@@ -1,0 +1,7 @@
+ucl:
+  lang: ucl
+  merge: true
+  path: tests/merge.in
+  upath: 'rootkey.array.1'
+  value: merged
+

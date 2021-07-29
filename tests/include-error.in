@@ -1,0 +1,7 @@
+.priority 2
+vm1 {
+	cpus = 1
+	origin = 2
+	mode = error
+}
+.include(duplicate=error, path=[tests/]) include-error_01.ucl

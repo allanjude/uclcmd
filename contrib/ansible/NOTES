@@ -1,0 +1,47 @@
+
+- shell> ansible-playbook run_tests.yml -t tests-module -e debug=true
+
+  * patterns: 'get.in*'
+
+  * msg: '[OK]  *** get *** Passed.'
+
+- set_08.cmd; Results are different
+
+  * shell> cat tests/set_08.cmd
+    set -n --ucl rootkey.new 5y
+
+  * 5 years x 365 days x 24 hours x 60 minutes x 60 seconds
+    new = 157680000.0
+
+  * shell> cat tests/set_08.res
+    ...
+    new = 1103760000.0;
+
+- shell> ansible-playbook run_tests.yml -t tests-module -CD -e debug=true
+
+  * patterns: 'set.in*'
+
+  * [ERROR] set_10.cmd
+
+    shell> cat  set_10.ansible
+    ucl:
+      format: 'ucl'
+      upath: 'rootkey.new'
+      type: array
+      value: '[1,2,3]'
+
+    --- before
+    +++ after
+    @@ -8,4 +8,7 @@
+             "b",
+             "c",
+         ]
+    +    new [
+    +        1,
+    +    ]
+     }
+    
+    changed: [host1] => (item=/scratch/vbotka.uclcmd/tests/set_10.ansible)
+
+
+# EOF

@@ -31,12 +31,14 @@
 int
 merge_main(int argc, char *argv[])
 {
-    const char *filename = NULL;
     int ret = 0, ch;
     bool success = false;
 
     /* Initialize parser */
     parser = ucl_parser_new(UCLCMD_PARSER_FLAGS);
+
+    /* Set the default output type */
+    output_type = UCL_EMIT_CONFIG;
 
     /*	options	descriptor */
     static struct option longopts[] = {
@@ -52,8 +54,10 @@ merge_main(int argc, char *argv[])
 	{ "input",	no_argument,		NULL,		'i' },
 	{ "msgpack",	no_argument,		&output_type,
 	    UCL_EMIT_MSGPACK },
+	{ "noop",	no_argument,		&noop,		1 },
 	{ "nonewline",	no_argument,		&nonewline,	1 },
 	{ "noquotes",	no_argument,		&show_raw,	1 },
+	{ "output",	required_argument,	NULL,		'o' },
 	{ "shellvars",	no_argument,		NULL,		'l' },
 	{ "ucl",	no_argument,		&output_type,
 	    UCL_EMIT_CONFIG },
@@ -61,7 +65,7 @@ merge_main(int argc, char *argv[])
 	{ NULL,		0,			NULL,		0 }
     };
 
-    while ((ch = getopt_long(argc, argv, "cdD:ef:i:jklmnquy", longopts, NULL)) != -1) {
+    while ((ch = getopt_long(argc, argv, "cdD:ef:i:jklmnNo:quy", longopts, NULL)) != -1) {
 	switch (ch) {
 	case 'c':
 	    output_type = UCL_EMIT_JSON_COMPACT;
@@ -105,7 +109,14 @@ merge_main(int argc, char *argv[])
 	    output_type = UCL_EMIT_MSGPACK;
 	    break;
 	case 'n':
+	    noop = 1;
+	    break;
+	case 'N':
 	    nonewline = 1;
+	    break;
+	case 'o':
+	    outfile = optarg;
+	    output = output_open(outfile);
 	    break;
 	case 'q':
 	    show_raw = 1;
@@ -150,9 +161,6 @@ merge_main(int argc, char *argv[])
 
     cleanup();
 
-    if (nonewline) {
-	printf("\n");
-    }
     return(ret);
 }
 
@@ -164,6 +172,7 @@ merge_mode(char *destination_node, char *data)
     ucl_object_t *old_obj = NULL;
     ucl_object_t *tmp_obj = NULL;
     int success = 0;
+    char *dst_frag;
 
     setparser = ucl_parser_new(UCL_PARSER_KEY_LOWERCASE |
 	UCL_PARSER_NO_IMPLICIT_ARRAYS);
@@ -173,6 +182,8 @@ merge_mode(char *destination_node, char *data)
     sub_obj = get_object(destination_node);
 
     if (sub_obj == NULL) {
+	fprintf(stderr, "Failed to find destination node: %s\n",
+	    destination_node);
 	return false;
     }
 
@@ -189,9 +200,9 @@ merge_mode(char *destination_node, char *data)
 
     if (debug > 0) {
 	char *rt = NULL, *dt = NULL, *st = NULL;
-	rt = type_as_string(dst_obj);
-	dt = type_as_string(sub_obj);
-	st = type_as_string(set_obj);
+	rt = objtype_as_string(dst_obj);
+	dt = objtype_as_string(sub_obj);
+	st = objtype_as_string(set_obj);
 	fprintf(stderr, "root type: %s, destination type: %s, new type: %s\n",
 	    rt, dt, st);
 	if (rt != NULL) free(rt);
@@ -202,8 +213,18 @@ merge_mode(char *destination_node, char *data)
 	    ucl_object_key(sub_obj), ucl_object_key(dst_obj));
     }
 
+    dst_frag = strrchr(destination_node, input_sepchar);
+    if (dst_frag == NULL) {
+	dst_frag = destination_node;
+    } else {
+	dst_frag++;
+    }
     /* Add it to the object here */
-    if (ucl_object_type(sub_obj) == UCL_ARRAY && ucl_object_type(set_obj) == UCL_ARRAY) {
+    if (sub_obj == dst_obj && *dst_frag != '\0') {
+	/* Sub-object does not exist, create a new one */
+	success = ucl_object_insert_key(dst_obj, set_obj, dst_frag, 0,
+	    true);
+    } else if (ucl_object_type(sub_obj) == UCL_ARRAY && ucl_object_type(set_obj) == UCL_ARRAY) {
 	if (debug > 0) {
 	    fprintf(stderr, "Merging array of size %u with array of size %u\n",
 		sub_obj->len, set_obj->len);

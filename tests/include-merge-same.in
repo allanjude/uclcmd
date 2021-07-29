@@ -1,0 +1,10 @@
+vm1 {
+	cpus = 1
+	origin = 4
+	mode = merge
+	sub {
+		a = b
+		c = d
+	}
+}
+.include(duplicate=merge, path=[tests/]) include-merge-same_01.ucl

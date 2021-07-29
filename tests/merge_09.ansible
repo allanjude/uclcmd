@@ -1,0 +1,7 @@
+ucl:
+  lang: ucl
+  merge: true
+  path: tests/merge.in
+  ipath: "{{ tests_dir }}/merge_09.ucl"
+  upath: '.'
+

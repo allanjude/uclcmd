@@ -1,1 +1,1 @@
-set --ucl rootkey.array.1 d
+set -n --ucl rootkey.array.1 d

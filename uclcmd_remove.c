@@ -31,13 +31,15 @@
 int
 remove_main(int argc, char *argv[])
 {
-    const char *filename = NULL;
     int ret = 0, k = 0, ch;
     ucl_object_t *obj_parent = NULL, *obj_child = NULL, *obj_temp = NULL;
     bool success = false;
 
     /* Initialize parser */
     parser = ucl_parser_new(UCLCMD_PARSER_FLAGS);
+
+    /* Set the default output type */
+    output_type = UCL_EMIT_CONFIG;
 
     /*	options	descriptor */
     static struct option longopts[] = {
@@ -52,8 +54,10 @@ remove_main(int argc, char *argv[])
 	{ "keys",	no_argument,		&show_keys,	1 },
 	{ "msgpack",	no_argument,		&output_type,
 	    UCL_EMIT_MSGPACK },
+	{ "noop",	no_argument,		&noop,		1 },
 	{ "nonewline",	no_argument,		&nonewline,	1 },
 	{ "noquotes",	no_argument,		&show_raw,	1 },
+	{ "output",	required_argument,	NULL,		'o' },
 	{ "shellvars",	no_argument,		NULL,		'l' },
 	{ "ucl",	no_argument,		&output_type,
 	    UCL_EMIT_CONFIG },
@@ -61,7 +65,7 @@ remove_main(int argc, char *argv[])
 	{ NULL,		0,			NULL,		0 }
     };
 
-    while ((ch = getopt_long(argc, argv, "cdD:ef:jklmnquy", longopts, NULL)) != -1) {
+    while ((ch = getopt_long(argc, argv, "cdD:ef:jklmnNo:quy", longopts, NULL)) != -1) {
 	switch (ch) {
 	case 'c':
 	    output_type = UCL_EMIT_JSON_COMPACT;
@@ -102,7 +106,14 @@ remove_main(int argc, char *argv[])
 	    output_type = UCL_EMIT_MSGPACK;
 	    break;
 	case 'n':
+	    noop = 1;
+	    break;
+	case 'N':
 	    nonewline = 1;
+	    break;
+	case 'o':
+	    outfile = optarg;
+	    output = output_open(outfile);
 	    break;
 	case 'q':
 	    show_raw = 1;
@@ -142,7 +153,7 @@ remove_main(int argc, char *argv[])
 	    continue;
 	}
 	obj_child = get_object(argv[k]);
-	if (obj_child == NULL) {
+	if (obj_child == NULL || obj_child == obj_parent) {
 	    fprintf(stderr, "Failed to find key %s, skipping...\n", argv[k]);
 	    continue;
 	}
@@ -184,8 +195,5 @@ remove_main(int argc, char *argv[])
 
     cleanup();
 
-    if (nonewline) {
-	printf("\n");
-    }
     return(ret);
 }

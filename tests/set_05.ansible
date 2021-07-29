@@ -1,0 +1,4 @@
+ucl:
+  lang: ucl
+  upath: 'rootkey.array'
+  value: not-an-array-anymore

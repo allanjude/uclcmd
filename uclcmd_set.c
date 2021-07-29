@@ -31,12 +31,15 @@
 int
 set_main(int argc, char *argv[])
 {
-    const char *filename = NULL;
     int ret = 0, ch;
     bool success = false;
+    ucl_type_t want_type = UCL_NULL;
 
     /* Initialize parser */
     parser = ucl_parser_new(UCLCMD_PARSER_FLAGS | UCL_PARSER_DISABLE_MACRO);
+
+    /* Set the default output type */
+    output_type = UCL_EMIT_CONFIG;
 
     /*	options	descriptor */
     static struct option longopts[] = {
@@ -52,16 +55,19 @@ set_main(int argc, char *argv[])
 	{ "input",	no_argument,		NULL,		'i' },
 	{ "msgpack",	no_argument,		&output_type,
 	    UCL_EMIT_MSGPACK },
+	{ "noop",	no_argument,		&noop,		1 },
 	{ "nonewline",	no_argument,		&nonewline,	1 },
 	{ "noquotes",	no_argument,		&show_raw,	1 },
+	{ "output",	required_argument,	NULL,		'o' },
 	{ "shellvars",	no_argument,		NULL,		'l' },
+	{ "type",	required_argument,	NULL,		't' },
 	{ "ucl",	no_argument,		&output_type,
 	    UCL_EMIT_CONFIG },
 	{ "yaml",	no_argument,		&output_type,	UCL_EMIT_YAML },
 	{ NULL,		0,			NULL,		0 }
     };
 
-    while ((ch = getopt_long(argc, argv, "cdD:ef:i:jklmnquy", longopts, NULL)) != -1) {
+    while ((ch = getopt_long(argc, argv, "cdD:ef:i:jklmnNo:qt:uy", longopts, NULL)) != -1) {
 	switch (ch) {
 	case 'c':
 	    output_type = UCL_EMIT_JSON_COMPACT;
@@ -105,10 +111,20 @@ set_main(int argc, char *argv[])
 	    output_type = UCL_EMIT_MSGPACK;
 	    break;
 	case 'n':
+	    noop = 1;
+	    break;
+	case 'N':
 	    nonewline = 1;
+	    break;
+	case 'o':
+	    outfile = optarg;
+	    output = output_open(outfile);
 	    break;
 	case 'q':
 	    show_raw = 1;
+	    break;
+	case 't':
+	    want_type = string_to_type(optarg);
 	    break;
 	case 'u':
 	    output_type = UCL_EMIT_CONFIG;
@@ -136,13 +152,27 @@ set_main(int argc, char *argv[])
     }
 
     if (argc > 1) { 
-	success = set_mode(argv[0], argv[1]);
+	success = set_mode(argv[0], argv[1], want_type);
     } else {
-	success = set_mode(argv[0], NULL);
+	success = set_mode(argv[0], NULL, want_type);
     }
 
     if (success) {
-	get_mode("");
+	if (noop == 0) {
+	    if (outfile == NULL && filename != NULL) {
+		outfile = filename;
+		success = replace_file(root_obj, "", "", outfile);
+		if (success != 0) {
+		    fprintf(stderr, "Error: failed to write the changes to %s\n",
+			outfile);
+		    exit(7);
+		}
+	    } else {
+		output_chunk(root_obj, "", "");
+	    }
+	} else {
+	    get_mode("");
+	}
     } else {
 	fprintf(stderr, "Error: Failed to apply the set operation.\n");
 	ret = 1;
@@ -150,28 +180,27 @@ set_main(int argc, char *argv[])
 
     cleanup();
 
-    if (nonewline) {
-	printf("\n");
-    }
     return(ret);
 }
 
 int
-set_mode(char *destination_node, char *data)
+set_mode(char *destination_node, char *data, ucl_type_t want_type)
 {
     ucl_object_t *dst_obj = NULL;
     ucl_object_t *sub_obj = NULL;
     ucl_object_t *old_obj = NULL;
     int success = 0;
+    char *dst_frag;
 
-    setparser = ucl_parser_new(UCL_PARSER_KEY_LOWERCASE |
-	UCL_PARSER_NO_IMPLICIT_ARRAYS);
+    setparser = ucl_parser_new(UCLCMD_PARSER_FLAGS);
 
     /* Lookup the destination to write to */
     dst_obj = get_parent(destination_node);
     sub_obj = get_object(destination_node);
 
     if (sub_obj == NULL) {
+	fprintf(stderr, "Failed to find destination node: %s\n",
+	    destination_node);
 	return false;
     }
 
@@ -183,14 +212,76 @@ set_mode(char *destination_node, char *data)
 	set_obj = parse_input(setparser, stdin);
     } else {
 	/* User provided data inline */
-	set_obj = parse_string(setparser, data);
+	switch (want_type) {
+	/*
+	 * We try to let UCL do its magic, for syntax sugar etc, but if that
+	 * fails to provide the required type, we force it
+	 */
+	case UCL_INT:
+	    set_obj = ucl_object_fromstring_common(data, 0, UCL_STRING_PARSE_INT);
+	    if (ucl_object_type(set_obj) != UCL_INT) {
+		ucl_object_unref(set_obj);
+		set_obj = ucl_object_fromint(strtoimax(data, NULL, 0));
+	    }
+	    break;
+	case UCL_FLOAT:
+	    set_obj = ucl_object_fromstring_common(data, 0, UCL_STRING_PARSE_DOUBLE);
+	    if (ucl_object_type(set_obj) != UCL_FLOAT) {
+		ucl_object_unref(set_obj);
+		set_obj = ucl_object_fromdouble(strtod(data, NULL));
+	    }
+	    break;
+	case UCL_STRING:
+	    set_obj = ucl_object_fromstring_common(data, 0, UCL_STRING_RAW);
+	    break;
+	case UCL_BOOLEAN:
+	    set_obj = ucl_object_fromstring_common(data, 0, UCL_STRING_PARSE_BOOLEAN);
+	    if (ucl_object_type(set_obj) != UCL_BOOLEAN) {
+		if (strlen(data) == 0) {
+		    ucl_object_unref(set_obj);
+		    set_obj = ucl_object_frombool(false);
+		} else {
+		    ucl_object_unref(set_obj);
+		    set_obj = ucl_object_frombool(true);
+		}
+	    }
+	    break;
+	case UCL_TIME:
+	    set_obj = ucl_object_fromstring_common(data, 0,
+		UCL_STRING_PARSE_TIME | UCL_STRING_PARSE_DOUBLE);
+	    if (ucl_object_type(set_obj) != UCL_TIME &&
+		    ucl_object_type(set_obj) != UCL_INT &&
+		    ucl_object_type(set_obj) != UCL_FLOAT) {
+		ucl_object_unref(set_obj);
+		set_obj = ucl_object_fromdouble(strtod(data, NULL));
+		if (set_obj != NULL) {
+		    set_obj->type = UCL_TIME;
+		}
+	    }
+	    break;
+	case UCL_NULL:
+	    set_obj = ucl_object_fromstring_common(data, 0, UCL_STRING_PARSE);
+	    break;
+	case UCL_OBJECT:
+	case UCL_ARRAY:
+	case UCL_USERDATA:
+	    set_obj = parse_string(setparser, data);
+	    break;
+	}
+    }
+
+    if (want_type != UCL_NULL && ucl_object_type(set_obj) != want_type) {
+	fprintf(stderr, "Unable to convert '%s' to a %s, only %s\n",
+	    data, type_as_string(want_type), objtype_as_string(set_obj));
+	cleanup();
+	exit(6);
     }
 
     if (debug > 0) {
 	char *rt = NULL, *dt = NULL, *st = NULL;
-	rt = type_as_string(dst_obj);
-	dt = type_as_string(sub_obj);
-	st = type_as_string(set_obj);
+	rt = objtype_as_string(dst_obj);
+	dt = objtype_as_string(sub_obj);
+	st = objtype_as_string(set_obj);
 	fprintf(stderr, "root type: %s, destination type: %s, new type: %s\n",
 	    rt, dt, st);
 	if (rt != NULL) free(rt);
@@ -201,30 +292,44 @@ set_mode(char *destination_node, char *data)
 	    ucl_object_key(sub_obj), ucl_object_key(dst_obj));
     }
 
+    dst_frag = strrchr(destination_node, input_sepchar);
+    if (dst_frag == NULL) {
+	dst_frag = destination_node;
+    } else {
+	dst_frag++;
+    }
     /* Replace it in the object here */
     if (ucl_object_type(dst_obj) == UCL_ARRAY) {
-	char *dst_frag = strrchr(destination_node, input_sepchar);
-
 	/* XXX TODO: What if the destination_node only points to an array */
 	/* XXX TODO: What if we want to replace an entire array? */
-	dst_frag++;
 	if (debug > 0) {
 	    fprintf(stderr, "Replacing array index %s\n", dst_frag);
 	}
-	old_obj = ucl_array_replace_index(dst_obj, set_obj, strtoul(dst_frag,
-	    NULL, 0));
-	success = false;
-	if (old_obj != NULL) {
-	    ucl_object_unref(old_obj);
-	    set_obj = NULL;
-	    success = true;
+	if (sub_obj == dst_obj) {
+	    /* Sub-object does not exist, create a new one */
+	    success = ucl_array_append(dst_obj, set_obj);
+	} else {
+	    old_obj = ucl_array_replace_index(dst_obj, set_obj, strtoul(dst_frag,
+		NULL, 0));
+	    success = false;
+	    if (old_obj != NULL) {
+		ucl_object_unref(old_obj);
+		set_obj = NULL;
+		success = true;
+	    }
 	}
     } else {
 	if (debug > 0) {
 	    fprintf(stderr, "Replacing key %s\n", ucl_object_key(sub_obj));
 	}
-	success = ucl_object_replace_key(dst_obj, set_obj,
-	    ucl_object_key(sub_obj), 0, true);
+	if (sub_obj == dst_obj) {
+	    /* Sub-object does not exist, create a new one */
+	    success = ucl_object_insert_key(dst_obj, set_obj, dst_frag, 0,
+		true);
+	} else {
+	    success = ucl_object_replace_key(dst_obj, set_obj,
+		ucl_object_key(sub_obj), 0, true);
+	}
 	set_obj = NULL;
     }
 

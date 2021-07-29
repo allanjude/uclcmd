@@ -1,0 +1,16 @@
+vm1 {
+    cpus = 2;
+    from = "test";
+    sub {
+        foo = "bar";
+        c = "e";
+    }
+}
+vm2 {
+    cpus = 4;
+}
+vm3 {
+    cpus = 2;
+    kilo = 1000;
+    kibbi = 1024;
+}

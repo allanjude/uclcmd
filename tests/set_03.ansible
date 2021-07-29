@@ -1,0 +1,4 @@
+ucl:
+  lang: ucl
+  upath: 'rootkey.subkey'
+  ipath: "{{ tests_dir }}/set_03.ucl"

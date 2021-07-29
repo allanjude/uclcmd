@@ -31,7 +31,6 @@
 int
 get_main(int argc, char *argv[])
 {
-    const char *filename = NULL;
     int ret = 0, k = 0, ch;
 
     /* Initialize parser */
@@ -51,8 +50,10 @@ get_main(int argc, char *argv[])
 	{ "input",	no_argument,		NULL,		'i' },
 	{ "msgpack",	no_argument,		&output_type,
 	    UCL_EMIT_MSGPACK },
+	{ "noop",	no_argument,		&noop,		1 },
 	{ "nonewline",	no_argument,		&nonewline,	1 },
 	{ "noquotes",	no_argument,		&show_raw,	1 },
+	{ "output",	required_argument,	NULL,		'o' },
 	{ "shellvars",	no_argument,		NULL,		'l' },
 	{ "ucl",	no_argument,		&output_type,
 	    UCL_EMIT_CONFIG },
@@ -60,7 +61,7 @@ get_main(int argc, char *argv[])
 	{ NULL,		0,			NULL,		0 }
     };
 
-    while ((ch = getopt_long(argc, argv, "cdD:ef:i:jklmnquy", longopts, NULL)) != -1) {
+    while ((ch = getopt_long(argc, argv, "cdD:ef:i:jklmnNo:quy", longopts, NULL)) != -1) {
 	switch (ch) {
 	case 'c':
 	    output_type = UCL_EMIT_JSON_COMPACT;
@@ -89,7 +90,7 @@ get_main(int argc, char *argv[])
 	    }
 	    break;
 	case 'i':
-	    printf("Not implemented yet\n");
+	    fprintf(stderr, "Not implemented yet\n");
 	    exit(1);
 	    break;
 	case 'j':
@@ -106,7 +107,14 @@ get_main(int argc, char *argv[])
 	    output_type = UCL_EMIT_MSGPACK;
 	    break;
 	case 'n':
+	    noop = 1;
+	    break;
+	case 'N':
 	    nonewline = 1;
+	    break;
+	case 'o':
+	    outfile = optarg;
+	    output = output_open(outfile);
 	    break;
 	case 'q':
 	    show_raw = 1;
@@ -141,10 +149,6 @@ get_main(int argc, char *argv[])
     }
 
     cleanup();
-
-    if (nonewline) {
-	printf("\n");
-    }
 
     return(ret);
 }
@@ -216,7 +220,11 @@ get_mode(char *requested_node)
 	    command_count);
     }
     if (command_count == 0) {
-	output_chunk(found_object, nodepath, "");
+	if (shvars == 1) {
+		get_cmd_recurse(found_object, "", "recurse", "", 0);
+	} else {
+		output_chunk(found_object, nodepath, "");
+	}
     }
     free(nodepath);
 }
@@ -278,21 +286,21 @@ get_cmd_length(const ucl_object_t *obj, char *nodepath,
     const char *command_str, char *remaining_commands, int recurse)
 {
     if (firstline == false) {
-	printf(" ");
+	fprintf(output, " ");
     }
     if (obj == NULL) {
 	if (show_keys == 1)
-	    printf("(null)=");
-	printf("0");
+	    fprintf(output, "(null)=");
+	fprintf(output, "0");
     } else {
 	if (show_keys == 1)
-	    printf("%s", nodepath);
-	printf("%u", obj->len);
+	    fprintf(output, "%s", nodepath);
+	fprintf(output, "%u", obj->len);
     }
     if (nonewline) {
 	firstline = false;
     } else {
-	printf("\n");
+	fprintf(output, "\n");
     }
 
     return recurse;
@@ -306,52 +314,52 @@ get_cmd_type(const ucl_object_t *obj, char *nodepath,
     const char *command_str, char *remaining_commands, int recurse)
 {
     if (firstline == false) {
-	printf(" ");
+	fprintf(output, " ");
     }
     if (obj == NULL) {
 	if (show_keys == 1)
-	    printf("(null)=");
-	printf("null");
+	    fprintf(output, "(null)=");
+	fprintf(output, "null");
     } else {
 	if (show_keys == 1)
-	    printf("%s=", nodepath);
+	    fprintf(output, "%s=", nodepath);
 	switch(ucl_object_type(obj)) {
 	case UCL_OBJECT:
-	    printf("object");
+	    fprintf(output, "object");
 	    break;
 	case UCL_ARRAY:
-	    printf("array");
+	    fprintf(output, "array");
 	    break;
 	case UCL_INT:
-	    printf("int");
+	    fprintf(output, "int");
 	    break;
 	case UCL_FLOAT:
-	    printf("float");
+	    fprintf(output, "float");
 	    break;
 	case UCL_STRING:
-	    printf("string");
+	    fprintf(output, "string");
 	    break;
 	case UCL_BOOLEAN:
-	    printf("boolean");
+	    fprintf(output, "boolean");
 	    break;
 	case UCL_TIME:
-	    printf("time");
+	    fprintf(output, "time");
 	    break;
 	case UCL_USERDATA:
-	    printf("userdata");
+	    fprintf(output, "userdata");
 	    break;
 	case UCL_NULL:
-	    printf("null");
+	    fprintf(output, "null");
 	    break;
 	default:
-	    printf("unknown");
+	    fprintf(output, "unknown");
 	    break;
 	}
     }
     if (nonewline) {
 	firstline = false;
     } else {
-	printf("\n");
+	fprintf(output, "\n");
     }
 
     return(recurse);
@@ -371,13 +379,13 @@ get_cmd_keys(const ucl_object_t *obj, char *nodepath,
     if (obj != NULL) {
 	while ((cur = ucl_iterate_object(obj, &it, true))) {
 	    if (firstline == false) {
-		printf(" ");
+		fprintf(output, " ");
 	    }
-	    printf("%s", ucl_object_key(cur));
+	    fprintf(output, "%s", ucl_object_key(cur));
 	    if (nonewline) {
 		firstline = false;
 	    } else {
-		printf("\n");
+		fprintf(output, "\n");
 	    }
 	    loopcount++;
 	}
@@ -516,8 +524,8 @@ get_cmd_recurse(const ucl_object_t *obj, char *nodepath,
 	} else {
 	    uclcmd_asprintf(&newkey, "%c%s", output_sepchar, ucl_object_key(cur));
 	}
-	if (ucl_object_type(cur) == UCL_OBJECT ||
-		ucl_object_type(cur) == UCL_ARRAY) {
+	if (expand == 1 && (ucl_object_type(cur) == UCL_OBJECT ||
+		ucl_object_type(cur) == UCL_ARRAY)) {
 	    it2 = NULL;
 	    while ((cur2 = ucl_iterate_object(cur, &it2, false))) {
 		if (nodepath != NULL && strlen(nodepath) > 0) {
