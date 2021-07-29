@@ -155,6 +155,7 @@ Troubleshooting
 ===============
 
 * Turn on debugging output, e.g.
+
   shell> ansible-playbook run_tests.yml -t tests-module -e patterns=get.in -e debug=true
 
 * Make sure the data tests/*.in hasn't been changed. (git status)
@@ -166,10 +167,13 @@ Setup required at the client (remote host)
 * uclcmd
 
 * Ansible standard ssh connectivity
+
   shell> ssh asadmin@10.1.0.17 which uclcmd
   /usr/local/bin/uclcmd
 
-* Clean master branch of the uclcmd repo
+* Clean master branch of the uclcmd repo or any fork which provides
+  *tests*
+
   shell> ssh asadmin@10.1.0.17 "cd /scratch/uclcmd; git remote -v; git status"
   origin			https://github.com/allanjude/uclcmd (fetch)
   origin			https://github.com/allanjude/uclcmd (push)
@@ -189,6 +193,8 @@ Install Ansible
 
 Clone vbotka.uclcmd
 -------------------
+Clone the repository and set upstream.
+
 shell> pwd
 /scratch
 
@@ -222,8 +228,10 @@ nothing to commit, working tree clean
 
 Clone vbotka.ansible.community.general
 --------------------------------------
+Clone the repository and set upstream.
+
 shell> pwd
-/scratch
+/scratch/dev/ansible/collections/ansible_collections/community
 
 shell> git clone https://github.com/vbotka/community.general.git
 Cloning into 'community.general'...
@@ -234,8 +242,8 @@ remote: Total 26350 (delta 204), reused 256 (delta 122), pack-reused 25946
 Receiving objects: 100% (26350/26350), 10.99 MiB | 1.84 MiB/s, done.
 Resolving deltas: 100% (15088/15088), done.
 
-shell> mv community.general vbotka.community.general
-shell> cd vbotka.community.general
+shell> mv community.general general
+shell> cd general
 shell> git remote -v
 origin	     https://github.com/vbotka/community.general.git (fetch)
 origin	     https://github.com/vbotka/community.general.git (push)

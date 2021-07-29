@@ -1,29 +1,13 @@
-
 [defaults]
 inventory = $PWD/hosts
 roles_path = $PWD/roles
-collections_path = $PWD/collections:/usr/share/ansible/collections
-library = /scratch/vbotka.ansible.community.general/plugins/modules:$PWD/plugins/modules:/usr/share/ansible/plugins/modules
-module_utils = /scratch/vbotka.ansible.community.general/plugins/module_utils:$PWD/plugins/module_utils:/usr/share/ansible/plugins/module_utils
-filter_plugins = /scratch/vbotka.ansible.community.general/plugins/filter:$PWD/plugins/filter:/usr/share/ansible/plugins/filter
+collections_path = /scratch/dev/ansible/collections
+library = /scratch/dev/ansible/collections/ansible_collections/community/general/plugins/modules:/usr/share/ansible/plugins/modules
+module_utils = /scratch/dev/ansible/collections/ansible_collections/community/general/plugins/module_utils:/usr/share/ansible/plugins/module_utils
+filter_plugins = /scratch/dev/ansible/collections/ansible_collections/community/general/plugins/filter:/usr/share/ansible/plugins/filter
 retry_files_enabled = false
 stdout_callback = yaml
 remote_tmp = ~/.ansible/tmp
-
-[inventory]
-
-[privilege_escalation]
-
-[paramiko_connection]
-
-[ssh_connection]
-# pipelining = true
-
-[persistent_connection]
-
-[accelerate]
-
-[selinux]
 
 [colors]
 changed = purple
@@ -39,7 +23,3 @@ skip = yellow
 unreachable = bright red
 verbose = blue
 warn = bright purple
-
-[diff]
-
-# EOF

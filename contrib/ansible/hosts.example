@@ -1,11 +1,12 @@
-host1 ansible_host=10.1.0.17
-
 [test_ucl]
-host1
+# host1 ansible_host=10.1.0.17
+test_11
+test_12
+test_13
 
 [test_ucl:vars]
 ansible_connection=ssh
-ansible_user=asadmin
+ansible_user=admin
 ansible_become=yes
 ansible_become_user=root
 ansible_become_method=sudo
