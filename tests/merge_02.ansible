@@ -1,0 +1,6 @@
+ucl:
+  lang: ucl
+  merge: true
+  path: tests/merge.in
+  ipath: "{{ tests_dir }}/merge_02.ucl"
+  upath: 'rootkey.subkey'

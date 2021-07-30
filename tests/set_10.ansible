@@ -1,0 +1,5 @@
+ucl:
+  lang: ucl
+  upath: 'rootkey.new'
+  vtype: array
+  value: '[1,2,3]'

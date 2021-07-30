@@ -1,0 +1,341 @@
+Testing of Ansible module ucl
+#############################
+
+Current status
+==============
+
+shell> ansible-playbook run_tests.yml -t tests-module -e patterns='*.in' -CD | grep msg:
+
+  msg: '[OK]  *** Test group: get *** Passed.'
+  msg: '[OK]  *** Test group: include-append-high *** Passed.'
+  msg: '[OK]  *** Test group: include-append-low *** Passed.'
+  msg: '[OK]  *** Test group: merge *** Passed.'
+  msg: '[OK]  *** Test group: include-append-same *** Passed.'
+  msg: '[ERR]: /scratch/uclcmd/tests/include-error.in Failed.'
+  msg: '[ERR] *** Test group: include-error *** 1 item(s) failed.'
+  msg: '[ERR] *** Test group: include-merge-high *** 1 item(s) failed.'
+  msg: '[ERR] *** Test group: include-merge-low *** 1 item(s) failed.'
+  msg: '[OK]  *** Test group: include-merge-same *** Passed.'
+  msg: '[OK]  *** Test group: include-rewrite-high *** Passed.'
+  msg: '[OK]  *** Test group: include-rewrite-low *** Passed.'
+  msg: '[OK]  *** Test group: include-rewrite-same *** Passed.'
+  msg: '[ERR] *** Test group: set *** 1 item(s) failed.'
+
+
+Results
+=======
+
+The preliminary results of testing Ansible module ucl (WIP) are in the
+first section. Last two sections comprise the setup instructions for
+the client and controller.
+
+
+Test module ucl
+---------------
+
+Run separate groups of the tests (get, set, merge, ...) with options
+"--check --diff" (equivalent of -CD). The option -C prevents changes
+of the tested data. If you run the tests without the option -C the
+tested data will be changed and the following tests will crash. Go to
+the repo at the remote host and checkout the origin. You'll be
+reminded by the playbook to use the check mode. Optionally disable it
+by "-e no_check=True"
+
+The option -D is optional. If used you'll see unified diffs of
+the before/after data on the fly.
+
+  shell> pwd
+  /scratch/vbotka.uclcmd/contrib/ansible
+
+  shell> ansible-playbook run_tests.yml -t tests-module -e patterns=get.in -CD
+  ...
+  msg: '[OK]  *** Test group: get *** Passed.'
+
+  shell> ansible-playbook run_tests.yml -t tests-module -e patterns=set.in -CD
+  ...
+  msg: '[ERR] *** Test group: set *** 1 item(s) failed.'
+
+  shell> ansible-playbook run_tests.yml -t tests-module -e patterns=merge.in -CD
+  ...
+  msg: '[OK]  *** Test group: merge *** Passed.'
+
+  shell>ansible-playbook run_tests.yml -t tests-module -e patterns=include-*.in -CD
+
+  msg: '[OK]  *** Test group: include-append-high *** Passed.'
+  msg: '[OK]  *** Test group: include-append-low *** Passed.'
+  msg: '[OK]  *** Test group: include-append-same *** Passed.'
+  msg: '[ERR]: /scratch/uclcmd/tests/include-error.in Failed.'
+  msg: '[ERR] *** Test group: include-error *** 1 item(s) failed.'
+  msg: '[ERR] *** Test group: include-merge-high *** 1 item(s) failed.'
+  msg: '[ERR] *** Test group: include-merge-low *** 1 item(s) failed.'
+  msg: '[OK]  *** Test group: include-merge-same *** Passed.'
+  msg: '[OK]  *** Test group: include-rewrite-high *** Passed.'
+  msg: '[OK]  *** Test group: include-rewrite-low *** Passed.'
+  msg: '[OK]  *** Test group: include-rewrite-same *** Passed.'
+
+
+Errors
+------
+
+* tests/get_07.ansible
+  Options not implemented yet.
+  get --shellvars --keys --expand .|recurse
+
+* tests/set_10.ansible
+  [WARNING]: The value "[1, 2, 3]" (type list) was converted to "'[1,
+  2, 3]'" (type string). If this does not look like what you expect,
+  quote the entire value to ensure it does not change.
+
+* tests/include-merge-high_01.ansible
+  tests/include-merge-low_01.ansible
+  include-error
+  include-merge-high
+  include-merge-high
+  include-merge-low
+  [ERR] ...
+
+
+Test uclcmd command
+-------------------
+
+The playbook run_tests_command.yml runs commands tests/*.cmd and
+stores the stdout results of the commands to the files
+/tmp/*.tmp. These files, instead of the data.out, are compared to the
+expected results tests/*.res.
+
+shell> ansible-playbook run_tests.yml -t tests-command -e patterns="*.in"
+  msg: '[OK]  *** Test group: get *** Passed.'
+  msg: '[OK]  *** Test group: include-append-high *** Passed.'
+  msg: '[OK]  *** Test group: include-append-low *** Passed.'
+  msg: '[OK]  *** Test group: merge *** Passed.'
+  msg: '[OK]  *** Test group: include-append-same *** Passed.'
+  msg: '[ERR] *** Test group: include-error *** 1 item(s) failed.'
+  msg: '[ERR] *** Test group: include-merge-high *** 1 item(s) failed.'
+  msg: '[ERR] *** Test group: include-merge-low *** 1 item(s) failed.'
+  msg: '[OK]  *** Test group: include-merge-same *** Passed.'
+  msg: '[OK]  *** Test group: include-rewrite-high *** Passed.'
+  msg: '[OK]  *** Test group: include-rewrite-low *** Passed.'
+  msg: '[OK]  *** Test group: include-rewrite-same *** Passed.'
+  msg: '[ERR] *** Test group: set *** 1 item(s) failed.'
+
+The same tests failed by running the script directly at the client
+
+  $ ./run_tests.sh
+  Test[include-error_01] Failed. did not match
+  Test[include-merge-high_01] Failed. did not match.
+  Test[include-merge-low_01] Failed. did not match.
+  Test[set_08] Failed. did not match.
+
+
+Other examples
+==============
+
+See available tags. There are other examples tagged ex-*.
+
+  shell> ansible-playbook run_tests.yml --list-tags
+  playbook: run_tests.yml
+  play #1 (test_ucl): test_ucl	TAGS: []
+      TASK TAGS: [always, ex-get, ex-get-all-formats, ex-get-err,
+      ex-get-fs-1, ex-get-fs-2, ex-rm-1, ex-rm-fs-bck-1,
+      ex-rm-fs-bck-2, ex-set, ex-set-fs-bck-1, ex-set-fs-bck-2,
+      ex-set-in, ex-val-1, ex-val-2, ex-val-3, test-inc-app-high,
+      test-inc-app-low, test-inc-app-same, test-inc-err, test-merge-1,
+      test-merge-2, test-merge-3, test-merge-4, test-merge-5,
+      test-merge-6, test-merge-7, test-merge-8, test-merge-9,
+      test-merge-high, test-merge-low, test-merge-same,
+      test-rwrt-high, test-rwrt-low, test-rwrt-same, test-set-1,
+      test-set-10, test-set-2, test-set-3, test-set-4, test-set-5,
+      test-set-6, test-set-7, test-set-8, test-set-9, tests-command,
+      tests-module]
+
+See the code before running the examples.
+
+
+Troubleshooting
+===============
+
+* Turn on debugging output, e.g.
+
+  shell> ansible-playbook run_tests.yml -t tests-module -e patterns=get.in -e debug=true
+
+* Make sure the data tests/*.in hasn't been changed. (git status)
+
+
+Setup required at the client (remote host)
+==========================================
+
+* uclcmd
+
+* Ansible standard ssh connectivity
+
+  shell> ssh asadmin@10.1.0.17 which uclcmd
+  /usr/local/bin/uclcmd
+
+* Clean master branch of the uclcmd repo or any fork which provides
+  *tests*
+
+  shell> ssh asadmin@10.1.0.17 "cd /scratch/uclcmd; git remote -v; git status"
+  origin			https://github.com/allanjude/uclcmd (fetch)
+  origin			https://github.com/allanjude/uclcmd (push)
+  On branch master
+  Your branch is up to date with 'origin/master'.
+
+  nothing to commit, working tree clean
+
+
+Test setup required at the controller (localhost)
+=================================================
+
+Install Ansible
+---------------
+<TBD>
+
+
+Clone vbotka.uclcmd
+-------------------
+Clone the repository and set upstream.
+
+shell> pwd
+/scratch
+
+shell> git clone https://github.com/vbotka/uclcmd.git
+Cloning into 'uclcmd'...
+remote: Enumerating objects: 573, done.
+remote: Counting objects: 100% (25/25), done.
+remote: Compressing objects: 100% (13/13), done.
+remote: Total 573 (delta 2), reused 23 (delta 2), pack-reused 548
+Receiving objects: 100% (573/573), 157.22 KiB | 1.40 MiB/s, done.
+Resolving deltas: 100% (318/318), done.
+
+shell> mv uclcmd vbotka.uclcmd
+shell> cd vbotka.uclcmd
+shell> git remote -v
+origin	     https://github.com/vbotka/uclcmd.git (fetch)
+origin	     https://github.com/vbotka/uclcmd.git (push)
+upstream     https://github.com/allanjude/uclcmd (fetch)
+upstream     https://github.com/allanjude/uclcmd (push)
+
+
+Checkout branch ansible
+-----------------------
+shell> git checkout ansible
+shell> git status
+On branch ansible
+Your branch is up to date with 'origin/ansible'.
+
+nothing to commit, working tree clean
+
+
+Clone vbotka.ansible.community.general
+--------------------------------------
+Clone the repository and set upstream.
+
+shell> pwd
+/scratch/dev/ansible/collections/ansible_collections/community
+
+shell> git clone https://github.com/vbotka/community.general.git
+Cloning into 'community.general'...
+remote: Enumerating objects: 26350, done.
+remote: Counting objects: 100% (404/404), done.
+remote: Compressing objects: 100% (266/266), done.
+remote: Total 26350 (delta 204), reused 256 (delta 122), pack-reused 25946
+Receiving objects: 100% (26350/26350), 10.99 MiB | 1.84 MiB/s, done.
+Resolving deltas: 100% (15088/15088), done.
+
+shell> mv community.general general
+shell> cd general
+shell> git remote -v
+origin	     https://github.com/vbotka/community.general.git (fetch)
+origin	     https://github.com/vbotka/community.general.git (push)
+upstream     https://github.com/ansible-collections/community.general.git (fetch)
+upstream     https://github.com/ansible-collections/community.general.git (push)
+
+
+Checkout branch ucl
+-------------------
+shell> git status
+On branch ucl
+Your branch is up to date with 'origin/ucl'.
+
+nothing to commit, working tree clean
+
+
+Configure Ansible path to modules, utils, and filters
+-----------------------------------------------------
+shell> pwd
+/scratch/vbotka.uclcmd/contrib/ansible
+
+shell> grep vbotka.ansible.community.general ansible.cfg
+library = /scratch/vbotka.ansible.community.general/plugins/modules: ...
+module_utils = /scratch/vbotka.ansible.community.general/plugins/module_utils: ...
+filter_plugins = /scratch/vbotka.ansible.community.general/plugins/filter: ...
+
+
+Install collection community.general
+------------------------------------
+shell> pwd
+/scratch/vbotka.uclcmd/contrib/ansible
+
+shell> ansible-galaxy collection install community.general
+Starting galaxy collection install process
+Process install dependency map
+Starting collection install process
+Installing 'community.general:3.3.2' to '/scratch/vbotka.uclcmd/contrib/ansible/collections/ansible_collections/community/general'
+Downloading https://galaxy.ansible.com/download/community-general-3.3.2.tar.gz to /home/vlado/.ansible/tmp/ansible-local-64449bqwn7jid/tmprxhwr35o
+community.general (3.3.2) was installed successfully
+
+
+Fit Ansible inventory and test connection
+-----------------------------------------
+shell> pwd
+/scratch/vbotka.uclcmd/contrib/ansible
+
+shell> cat hosts
+host1 ansible_hostname=10.1.0.17
+
+[test_ucl]
+host1
+
+[test_ucl:vars]
+ansible_connection=ssh
+ansible_user=asadmin
+ansible_become=yes
+ansible_become_user=root
+ansible_become_method=sudo
+ansible_python_interpreter=/usr/local/bin/python3.8
+ansible_perl_interpreter=/usr/local/bin/perl
+
+shell> ansible host1 -m setup | grep ansible_kernel_version
+        "ansible_kernel_version": "FreeBSD 13.0-RELEASE #0 ...
+
+
+Link tests directory to contrib/ansible
+---------------------------------------
+shell> pwd
+/scratch/vbotka.uclcmd/contrib/ansible
+
+shell> ln -s ../../tests tests
+
+
+Update variables of the playbook to your setting
+------------------------------------------------
+shell> pwd
+/scratch/vbotka.uclcmd/contrib/ansible
+
+shell> grep _dir run_tests.yml
+    tests_dir_local: "{{ playbook_dir }}/tests"  # at controller (localhost)
+    tests_dir: /scratch/uclcmd/tests             # at client(s) (remote host(s))
+    run_dir: /scratch/uclcmd                     # at client(s) (remote host(s))
+
+
+Test syntax of the playbook
+---------------------------
+shell> pwd
+/scratch/vbotka.uclcmd/contrib/ansible
+
+shell> ansible-playbook run_tests.yml --syntax-check
+
+playbook: run_tests.yml
+
+
+# EOF
