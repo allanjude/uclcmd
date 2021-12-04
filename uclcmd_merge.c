@@ -34,9 +34,6 @@ merge_main(int argc, char *argv[])
     int ret = 0, ch;
     bool success = false;
 
-    /* Initialize parser */
-    parser = ucl_parser_new(UCLCMD_PARSER_FLAGS);
-
     /* Set the default output type */
     output_type = UCL_EMIT_CONFIG;
 
@@ -52,6 +49,7 @@ merge_main(int argc, char *argv[])
 	    UCL_EMIT_JSON },
 	{ "keys",	no_argument,		&show_keys,	1 },
 	{ "input",	no_argument,		NULL,		'i' },
+	{ "foldcase",	no_argument,		NULL,		'I' },
 	{ "msgpack",	no_argument,		&output_type,
 	    UCL_EMIT_MSGPACK },
 	{ "noop",	no_argument,		&noop,		1 },
@@ -65,7 +63,7 @@ merge_main(int argc, char *argv[])
 	{ NULL,		0,			NULL,		0 }
     };
 
-    while ((ch = getopt_long(argc, argv, "cdD:ef:i:jklmnNo:quy", longopts, NULL)) != -1) {
+    while ((ch = getopt_long(argc, argv, "cdD:ef:i:IjklmnNo:quy", longopts, NULL)) != -1) {
 	switch (ch) {
 	case 'c':
 	    output_type = UCL_EMIT_JSON_COMPACT;
@@ -86,15 +84,12 @@ merge_main(int argc, char *argv[])
 	    break;
 	case 'f':
 	    filename = optarg;
-	    if (strcmp(optarg, "-") == 0) {
-		/* Input from STDIN */
-		root_obj = parse_input(parser, stdin);
-	    } else {
-		root_obj = parse_file(parser, filename);
-	    }
 	    break;
 	case 'i':
 	    include_file = optarg;
+	    break;
+	case 'I':
+	    pflags |= UCL_PARSER_KEY_LOWERCASE;
 	    break;
 	case 'j':
 	    output_type = UCL_EMIT_JSON;
@@ -142,8 +137,14 @@ merge_main(int argc, char *argv[])
 	usage();
     }
 
-    if (filename == NULL) {
+    /* Initialize parser */
+    parser = ucl_parser_new(UCLCMD_PARSER_FLAGS | pflags);
+
+    if (filename == NULL || strcmp(filename, "-") == 0) {
+	/* Input from STDIN */
 	root_obj = parse_input(parser, stdin);
+    } else {
+	root_obj = parse_file(parser, filename);
     }
 
     if (argc > 1) { /* XXX: need test for if > 2 inputs */

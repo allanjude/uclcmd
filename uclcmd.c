@@ -36,6 +36,7 @@
 
 int debug = 0, expand = 0, mode = 0, noop = 0, nonewline = 0;
 int show_keys = 0, show_raw = 0;
+int pflags = 0;
 bool firstline = true, shvars = false;
 int output_type = 254;
 ucl_object_t *root_obj = NULL;
@@ -70,6 +71,7 @@ main(int argc, char *argv[])
 	    { "del", remove_main },
 	    { "dump", output_main },
 	    { "help", (verb_func_t) usage },
+	    { "version", (verb_func_t) version },
 	    { NULL, NULL }
     };
 
@@ -109,10 +111,10 @@ void
 usage()
 {
     fprintf(stderr, "%s\n",
-"Usage: uclcmd get [-cdejklmNquy] [-D char] [-f file] [-o file] variable\n"
-"       uclcmd set [-cdjmnuy] [-t type] [-D char] [-f file] [-i file] [-o file] variable [UCL]\n"
-"       uclcmd merge [-cdjmnuy] [-D char] [-f file] [-i file] [-o file] variable\n"
-"       uclcmd remove [-cdjmnuy] [-D char] [-f file] [-o file] variable\n"
+"Usage: uclcmd get [-cdeIjklmNquy] [-D char] [-f file] [-o file] variable\n"
+"       uclcmd set [-cdIjmnuy] [-t type] [-D char] [-f file] [-i file] [-o file] variable [UCL]\n"
+"       uclcmd merge [-cdIjmnuy] [-D char] [-f file] [-i file] [-o file] variable\n"
+"       uclcmd remove [-cdIjmnuy] [-D char] [-f file] [-o file] variable\n"
 "\n"
 "COMMON OPTIONS:\n"
 "       -c --cjson      output compacted JSON\n"
@@ -120,6 +122,7 @@ usage()
 "       -D --delimiter  character to use as element delimiter (default is .)\n"
 "       -e --expand     Output the list of keys when encountering an object\n"
 "       -f --file       path to a file to read or write\n"
+"       -I --foldcase   fold all keys to lowercase (make matching insensitive)\n"
 "       -j --json       output pretty JSON\n"
 "       -k --keys       show key=value rather than just the value\n"
 "       -l --shellvars  keys are output with underscores as delimiter\n"
@@ -155,6 +158,13 @@ usage()
 "           array_1_name=\"value\"\n"
 "\n");
     exit(1);
+}
+
+void
+version()
+{
+
+    fprintf(stderr, "uclcmd version %s\n", UCLCMD_VERSION_STRING);
 }
 
 void

@@ -34,30 +34,25 @@ output_main(int argc, char *argv[])
     const char *filename = NULL;
     int ret = 0, ch;
 
-    /* Initialize parser */
-    parser = ucl_parser_new(UCLCMD_PARSER_FLAGS);
-
     /*	options	descriptor */
     static struct option longopts[] = {
 	{ "file",	required_argument,	NULL,		'f' },
 	{ "input",	no_argument,		NULL,		'i' },
+	{ "foldcase",	no_argument,		NULL,		'I' },
 	{ NULL,		0,			NULL,		0 }
     };
 
-    while ((ch = getopt_long(argc, argv, "f:i:", longopts, NULL)) != -1) {
+    while ((ch = getopt_long(argc, argv, "f:i:I", longopts, NULL)) != -1) {
 	switch (ch) {
 	case 'f':
 	    filename = optarg;
-	    if (strcmp(optarg, "-") == 0) {
-		/* Input from STDIN */
-		root_obj = parse_input(parser, stdin);
-	    } else {
-		root_obj = parse_file(parser, filename);
-	    }
 	    break;
 	case 'i':
 	    fprintf(stderr, "Not implemented yet\n");
 	    exit(1);
+	    break;
+	case 'I':
+	    pflags |= UCL_PARSER_KEY_LOWERCASE;
 	    break;
 	default:
 	    fprintf(stderr, "Error: Unexpected option: %i\n", ch);
@@ -68,8 +63,14 @@ output_main(int argc, char *argv[])
     argc -= optind;
     argv += optind;
 
-    if (filename == NULL) {
+    /* Initialize parser */
+    parser = ucl_parser_new(UCLCMD_PARSER_FLAGS | pflags);
+
+    if (filename == NULL || strcmp(filename, "-") == 0) {
+	/* Input from STDIN */
 	root_obj = parse_input(parser, stdin);
+    } else {
+	root_obj = parse_file(parser, filename);
     }
 
     ucl_obj_dump(root_obj, 0);
