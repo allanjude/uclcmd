@@ -34,7 +34,7 @@ get_main(int argc, char *argv[])
     int ret = 0, k = 0, ch;
 
     /* Initialize parser */
-    parser = ucl_parser_new(UCLCMD_PARSER_FLAGS);
+    parser = ucl_parser_new(UCLCMD_PARSER_FLAGS | UCL_PARSER_KEY_LOWERCASE);
 
     /*	options	descriptor */
     static struct option longopts[] = {
