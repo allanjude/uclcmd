@@ -1,16 +1,10 @@
 vm1 {
-    cpus [
-        1,
-        2,
-    ]
+    cpus = 1;
     origin = 4;
     mode = "merge";
     sub {
         a = "b";
-        c [
-            "d",
-            "e",
-        ]
+        c = "d";
         foo = "bar";
     }
     from = "test";

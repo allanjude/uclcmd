@@ -47,14 +47,23 @@
 
 #include <ucl.h>
 
+#define	QUOTE(str)				#str
+#define	EXPAND_AND_QUOTE(str)	QUOTE(str)
 #ifndef __DECONST
 #define __DECONST(type, var)    ((type)(uintptr_t)(const void *)(var))
 #endif
+
+#define	UCLCMD_VERSION_MAJOR	0
+#define UCLCMD_VERSION_MINOR	2
+#define	UCLCMD_VERSION_PATCH	20211204
+#define UCLCMD_VERSION			UCLCMD_VERSION_MAJOR.UCLCMD_VERSION_MINOR.UCLCMD_VERSION_PATCH
+#define UCLCMD_VERSION_STRING	EXPAND_AND_QUOTE(UCLCMD_VERSION)
 
 #define UCLCMD_PARSER_FLAGS	UCL_PARSER_NO_IMPLICIT_ARRAYS | \
 				UCL_PARSER_SAVE_COMMENTS
 
 extern int debug, expand, noop, nonewline, show_keys, show_raw;
+extern int pflags;
 extern bool firstline, shvars;
 extern int output_type;
 extern ucl_object_t *root_obj;
@@ -106,6 +115,7 @@ char * objtype_as_string (const ucl_object_t *obj);
 void ucl_obj_dump(const ucl_object_t *obj, unsigned int shift);
 void ucl_obj_dump_safe(const ucl_object_t *obj, unsigned int shift);
 void usage();
+void version();
 
 int get_cmd_each(const ucl_object_t *obj, char *nodepath,
     const char *command_str, char *remaining_commands, int recurse);

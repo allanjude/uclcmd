@@ -11,7 +11,7 @@ EXECUTABLE=uclcmd
 
 all: $(SRCS) $(EXECUTABLE)
 
-$(EXECUTABLE): $(OBJS)
+$(EXECUTABLE): $(OBJS) uclcmd.h
 	$(CC) $(LDFLAGS) $(LIBS) -o $(EXECUTABLE) $(OBJS)
 
 clean:

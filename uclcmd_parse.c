@@ -32,10 +32,11 @@ ucl_object_t*
 parse_file(struct ucl_parser *parser, const char *filename)
 {
     ucl_object_t *obj = NULL;
+    bool success = false;
 
-    ucl_parser_add_file(parser, filename);
+    success = ucl_parser_add_file(parser, filename);
 
-    if (ucl_parser_get_error(parser)) {
+    if (!success) {
 	fprintf(stderr, "Error occured: %s\n",
 	    ucl_parser_get_error(parser));
 	cleanup();
@@ -68,19 +69,32 @@ parse_input(struct ucl_parser *parser, FILE *source)
     success = ucl_parser_add_chunk(parser, inbuf, r);
     fclose(source);
 
-    if (ucl_parser_get_error_code(parser) == UCL_EMERGE) {
-	fprintf(stderr, "Error: Parse Error occured: %s\n",
-	    ucl_parser_get_error(parser));
-	cleanup();
-	exit(3);
-    }
-
-    if (success == false) {
-	/* There must be a better way to detect a string */
-	ucl_parser_clear_error(parser);
-	success = true;
-	uclcmd_asprintf(&data, "%s", inbuf);
-	obj = ucl_object_fromstring_common(data, 0, UCL_STRING_PARSE);
+    if (!success) {
+	switch (ucl_parser_get_error_code(parser)) {
+	case UCL_EOK:
+	    fprintf(stderr, "Error: Unexpected parse error occured: %s\n",
+	        ucl_parser_get_error(parser));
+	    break;
+	case UCL_EMERGE:
+	    fprintf(stderr, "Unable to merge: %s\n",
+	        ucl_parser_get_error(parser));
+	    break;
+	case UCL_ESYNTAX:
+	    /* The input was not a valid UCL object, treat is as a string */
+	    ucl_parser_clear_error(parser);
+	    success = true;
+	    uclcmd_asprintf(&data, "%s", inbuf);
+	    obj = ucl_object_fromstring_common(data, 0, UCL_STRING_PARSE);
+	    break;
+	default:
+	    fprintf(stderr, "Error: Parse Error occured: %s\n",
+	        ucl_parser_get_error(parser));
+	    break;
+	}
+	if (!success) {
+	    cleanup();
+	    exit(3);
+	}
     } else {
 	obj = ucl_parser_get_object(parser);
     }
@@ -103,18 +117,31 @@ parse_string(struct ucl_parser *parser, char *data)
 
     success = ucl_parser_add_string(parser, data, 0);
 
-    if (ucl_parser_get_error_code(parser) == UCL_EMERGE) {
-	fprintf(stderr, "Error: Parse Error occured: %s\n",
-	    ucl_parser_get_error(parser));
-	cleanup();
-	exit(3);
-    }
-
-    if (success == false) {
-	/* There must be a better way to detect a string */
-	ucl_parser_clear_error(parser);
-	success = true;
-	obj = ucl_object_fromstring_common(data, 0, UCL_STRING_PARSE);
+    if (!success) {
+	switch (ucl_parser_get_error_code(parser)) {
+	case UCL_EOK:
+	    fprintf(stderr, "Error: Unexpected parse error occured: %s\n",
+	        ucl_parser_get_error(parser));
+	    break;
+	case UCL_EMERGE:
+	    fprintf(stderr, "Unable to merge: %s\n",
+	        ucl_parser_get_error(parser));
+	    break;
+	case UCL_ESYNTAX:
+	    /* The input was not a valid UCL object, treat is as a string */
+	    ucl_parser_clear_error(parser);
+	    success = true;
+	    obj = ucl_object_fromstring_common(data, 0, UCL_STRING_PARSE);
+	    break;
+	default:
+	    fprintf(stderr, "Error: Parse Error occured: %s\n",
+	        ucl_parser_get_error(parser));
+	    break;
+	}
+	if (!success) {
+	    cleanup();
+	    exit(3);
+	}
     } else {
 	obj = ucl_parser_get_object(parser);
     }
