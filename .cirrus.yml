@@ -1,0 +1,37 @@
+compute_engine_instance:
+  # Image list available via
+  # gcloud compute images list --project freebsd-org-cloud-dev --no-standard-images
+  platform: freebsd
+  image_project: freebsd-org-cloud-dev
+  image: freebsd-13-1-release-amd64
+  cpu: 2
+  memory: 2G
+  disk: 40
+
+task:
+  matrix:
+  - name: uclcmd amd64 build
+    trigger_type: manual
+    env:
+      TARGET: amd64
+      TARGET_ARCH: amd64
+      TOOLCHAIN_PKG: llvm14
+  - name: uclcmd arm64 build
+    trigger_type: manual
+    env:
+      TARGET: arm64
+      TARGET_ARCH: aarch64
+      TOOLCHAIN_PKG: llvm14
+  timeout_in: 10m
+  setup_script:
+  - uname -a
+  - df -m
+  - pkg --version
+  - pw useradd user
+  - mkdir -p /usr/obj/$(pwd -P)
+  - chown user:user /usr/obj/$(pwd -P)
+  script:
+  - su user -c "make -j$(sysctl -n hw.ncpu)"
+  post_script:
+  - df -m
+  - du -m -s /usr/obj
